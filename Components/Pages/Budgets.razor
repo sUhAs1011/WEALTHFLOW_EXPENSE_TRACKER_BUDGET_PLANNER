@@ -95,16 +95,62 @@
                                 <div class="col-6">
                                     <label class="form-label">Icon (Emoji)</label>
                                     <InputSelect @bind-Value="newCategory.Icon" class="form-select">
-                                        <option value="📁">📁 Folder</option>
-                                        <option value="🥗">🥗 Health</option>
-                                        <option value="🏋️">🏋️ Fitness</option>
-                                        <option value="📚">📚 Education</option>
-                                        <option value="🎁">🎁 Gifts</option>
-                                        <option value="✈️">✈️ Travel</option>
-                                        <option value="💇">💇 Self Care</option>
-                                        <option value="🐶">🐶 Pets</option>
-                                        <option value="🛠️">🛠️ Home Care</option>
-                                        <option value="📈">📈 Invest</option>
+                                        <optgroup label="General">
+                                            <option value="📁">📁 Other / General</option>
+                                            <option value="🎁">🎁 Gifts & Donation</option>
+                                            <option value="❤️">❤️ Charity / Love</option>
+                                            <option value="🧸">🧸 Toys & Kids</option>
+                                        </optgroup>
+                                        <optgroup label="Food & Dining">
+                                            <option value="🍔">🍔 Restaurants & Fast Food</option>
+                                            <option value="🍎">🍎 Groceries</option>
+                                            <option value="☕">☕ Coffee & Cafe</option>
+                                            <option value="🍕">🍕 Pizza & Delivery</option>
+                                            <option value="🍺">🍺 Drinks & Nightlife</option>
+                                        </optgroup>
+                                        <optgroup label="Transport & Travel">
+                                            <option value="🚗">🚗 Car & Vehicle</option>
+                                            <option value="⛽">⛽ Gas & Fuel</option>
+                                            <option value="🚕">🚕 Taxi & Uber</option>
+                                            <option value="✈️">✈️ Travel & Flights</option>
+                                            <option value="🚆">🚆 Public Transport</option>
+                                        </optgroup>
+                                        <optgroup label="Home & Bills">
+                                            <option value="🏠">🏠 Rent & Mortgage</option>
+                                            <option value="⚡">⚡ Utilities & Electricity</option>
+                                            <option value="🔌">🔌 Gas & Water</option>
+                                            <option value="🌐">🌐 Internet & Phone</option>
+                                            <option value="🛋️">🛋️ Furniture & Deco</option>
+                                            <option value="🧹">🧹 Cleaning & Services</option>
+                                        </optgroup>
+                                        <optgroup label="Entertainment & Play">
+                                            <option value="🎬">🎬 Movies & Cinema</option>
+                                            <option value="🎮">🎮 Gaming & Tech</option>
+                                            <option value="🎤">🎤 Concerts & Shows</option>
+                                            <option value="🎫">🎫 Tickets & Events</option>
+                                            <option value="⚽">⚽ Sports & Hobbies</option>
+                                        </optgroup>
+                                        <optgroup label="Shopping & Style">
+                                            <option value="🛍️">🛍️ Shopping & Stores</option>
+                                            <option value="👕">👕 Clothing & Apparel</option>
+                                            <option value="👟">👟 Shoes & Gear</option>
+                                            <option value="💄">💄 Cosmetics & Beauty</option>
+                                            <option value="📱">📱 Gadgets & Electronics</option>
+                                        </optgroup>
+                                        <optgroup label="Health & Personal">
+                                            <option value="🥗">🥗 Health & Wellness</option>
+                                            <option value="🏋️">🏋️ Fitness & Gym</option>
+                                            <option value="💊">💊 Medicine & Pharmacy</option>
+                                            <option value="🩺">🩺 Doctor & Clinic</option>
+                                            <option value="💇">💇 Self Care & Haircut</option>
+                                            <option value="🐶">🐶 Pets & Veterinary</option>
+                                        </optgroup>
+                                        <optgroup label="Finance & Education">
+                                            <option value="📈">📈 Investments & Shares</option>
+                                            <option value="🏢">🏢 Office & Work</option>
+                                            <option value="🏫">🏫 Education & Courses</option>
+                                            <option value="📚">📚 Books & Stationery</option>
+                                        </optgroup>
                                     </InputSelect>
                                     <ValidationMessage For="() => newCategory.Icon" class="text-danger mt-1" style="font-size: 0.8rem;" />
                                 </div>
