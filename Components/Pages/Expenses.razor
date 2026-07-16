@@ -195,9 +195,37 @@
     </div>
 }
 
+<!-- Export CSV Filename Prompt Modal -->
+@if (isExportModalOpen)
+{
+    <div class="modal-backdrop-custom d-flex align-items-center justify-content-center">
+        <div class="modal-content-custom glass-card p-0" style="max-width: 400px; border: 1px solid var(--border-light);">
+            <div class="p-4 border-bottom border-secondary d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
+                <h4 class="mb-0 text-white font-weight-bold">Export to CSV</h4>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseExportModal"></button>
+            </div>
+            
+            <div class="p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label text-secondary" style="font-size: 0.85rem; font-weight: 600;">Specify Filename</label>
+                    <input type="text" class="form-control bg-dark border-secondary text-white" @bind="exportFileName" placeholder="e.g. My_Expenses" />
+                    <span class="text-secondary mt-1 d-block" style="font-size: 0.72rem;">File extension (.csv) will be added automatically.</span>
+                </div>
+            </div>
+            
+            <div class="p-4 border-top border-secondary d-flex justify-content-end gap-2" style="background: rgba(255, 255, 255, 0.02);">
+                <button type="button" class="btn btn-secondary-custom" @onclick="CloseExportModal">Cancel</button>
+                <button type="button" class="btn btn-primary-custom px-4" @onclick="ConfirmExportToCsv">Download</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool isLoading = true;
     private bool isModalOpen = false;
+    private bool isExportModalOpen = false;
+    private string exportFileName = "";
     private List<Expense> allExpenses = new();
     private List<Expense> filteredExpenses = new();
     private List<Category> categories = new();
@@ -363,13 +391,38 @@
         }
     }
 
-    private async Task ExportToCsv()
+    private void ExportToCsv()
     {
         if (filteredExpenses == null || !filteredExpenses.Any())
         {
             ShowToast("No transactions found to export.", "warning");
             return;
         }
+
+        // Set default filename using the current month and year
+        exportFileName = $"WealthFlow_Expenses_{DateTime.Today:MMMM_yyyy}";
+        isExportModalOpen = true;
+    }
+
+    private void CloseExportModal()
+    {
+        isExportModalOpen = false;
+    }
+
+    private async Task ConfirmExportToCsv()
+    {
+        isExportModalOpen = false;
+
+        var finalFileName = string.IsNullOrWhiteSpace(exportFileName) 
+            ? $"WealthFlow_Expenses_{DateTime.Today:MMMM_yyyy}" 
+            : exportFileName.Trim();
+            
+        if (finalFileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            finalFileName = finalFileName.Substring(0, finalFileName.Length - 4);
+        }
+        
+        finalFileName += ".csv";
 
         var csv = new System.Text.StringBuilder();
         csv.AppendLine("Date,Category,Description,Amount,Notes");
@@ -385,9 +438,8 @@
             csv.AppendLine($"{dateStr},{categoryStr},{descStr},{amountStr},{notesStr}");
         }
 
-        var fileName = $"WealthFlow_Expenses_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-        await JS.InvokeVoidAsync("downloadFileFromText", fileName, csv.ToString());
-        ShowToast($"Successfully exported {filteredExpenses.Count} transaction(s)!");
+        await JS.InvokeVoidAsync("downloadFileFromText", finalFileName, csv.ToString());
+        ShowToast($"Successfully exported {filteredExpenses.Count} transaction(s) to CSV!");
     }
 
     private string CleanCsvField(string field)
