@@ -59,7 +59,7 @@ public class ExpenseTrackerDbContext : DbContext
             new Expense { Id = 2, Description = "Gas Refill", Amount = 45.00m, Date = DateTime.Today.AddDays(-4), CategoryId = 2, Notes = "Chevron station" },
             new Expense { Id = 3, Description = "Electricity Bill", Amount = 120.40m, Date = DateTime.Today.AddDays(-3), CategoryId = 3, Notes = "Monthly power utility" },
             new Expense { Id = 4, Description = "Movie Tickets", Amount = 28.00m, Date = DateTime.Today.AddDays(-2), CategoryId = 4, Notes = "AMC Cinema" },
-            new Expense { Id = 5, Description = "Apartment Rent", Amount = 1200.00m, Date = currentMonthStart, CategoryId = 5, Notes = "Bank transfer to landlord" },
+            new Expense { Id = 5, Description = "Apartment Rent", Amount = 1200.00m, Date = currentMonthStart, CategoryId = 5, Notes = "Bank transfer to landlord", IsRecurring = true },
             new Expense { Id = 6, Description = "Sushi Dinner", Amount = 64.20m, Date = DateTime.Today.AddDays(-1), CategoryId = 1, Notes = "Date night at Sakura Sushi" },
             new Expense { Id = 7, Description = "Coffee & Bakery", Amount = 8.75m, Date = DateTime.Today, CategoryId = 1, Notes = "Starbucks morning break" }
         );

@@ -31,111 +31,173 @@
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="glass-card mb-4">
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <label class="form-label text-secondary" style="font-size: 0.85rem;">Search Description / Notes</label>
-                <input type="text" class="form-control" placeholder="Search..." @bind="filterSearch" @bind:event="oninput" @onkeyup="ApplyFilters" />
+    <!-- Main Content Area Grid -->
+    <div class="row g-4">
+        <!-- Left Column: Filters and Transactions Table -->
+        <div class="col-12 col-lg-8">
+            <!-- Filters Section -->
+            <div class="glass-card mb-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-secondary" style="font-size: 0.85rem;">Search Description / Notes</label>
+                        <input type="text" class="form-control" placeholder="Search..." @bind="filterSearch" @bind:event="oninput" @onkeyup="ApplyFilters" />
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="form-label text-secondary" style="font-size: 0.85rem;">Category</label>
+                        <select class="form-select" @bind="filterCategoryId" @bind:after="ApplyFilters">
+                            <option value="@(0)">All Categories</option>
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id">@cat.Icon @cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3 col-md-2.5">
+                        <label class="form-label text-secondary" style="font-size: 0.85rem;">Start Date</label>
+                        <input type="date" class="form-control" @bind="filterStartDate" @bind:after="ApplyFilters" />
+                    </div>
+                    <div class="col-6 col-sm-3 col-md-2.5">
+                        <label class="form-label text-secondary" style="font-size: 0.85rem;">End Date</label>
+                        <input type="date" class="form-control" @bind="filterEndDate" @bind:after="ApplyFilters" />
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                    <!-- Preset Buttons -->
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-month" ? "active" : "")" @onclick='() => SetDatePreset("this-month")'>This Month</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "last-30" ? "active" : "")" @onclick='() => SetDatePreset("last-30")'>Last 30 Days</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-year" ? "active" : "")" @onclick='() => SetDatePreset("this-year")'>This Year</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "all" ? "active" : "")" @onclick='() => SetDatePreset("all")'>All Time</button>
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary-custom btn-sm py-1 px-3" @onclick="ResetFilters">Reset Filters</button>
+                    </div>
+                </div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <label class="form-label text-secondary" style="font-size: 0.85rem;">Category</label>
-                <select class="form-select" @bind="filterCategoryId" @bind:after="ApplyFilters">
-                    <option value="@(0)">All Categories</option>
-                    @foreach (var cat in categories)
-                    {
-                        <option value="@cat.Id">@cat.Icon @cat.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-6 col-sm-3 col-md-2.5">
-                <label class="form-label text-secondary" style="font-size: 0.85rem;">Start Date</label>
-                <input type="date" class="form-control" @bind="filterStartDate" @bind:after="ApplyFilters" />
-            </div>
-            <div class="col-6 col-sm-3 col-md-2.5">
-                <label class="form-label text-secondary" style="font-size: 0.85rem;">End Date</label>
-                <input type="date" class="form-control" @bind="filterEndDate" @bind:after="ApplyFilters" />
-            </div>
+
+            <!-- Expenses Table -->
+            @if (isLoading)
+            {
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (!filteredExpenses.Any())
+            {
+                <div class="glass-card text-center py-5">
+                    <div class="mb-3" style="font-size: 3rem;">🔍</div>
+                    <h4 class="text-white">No expenses matched your search</h4>
+                    <p class="text-secondary">Try adjusting your filters or log a new transaction.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center" style="width: 150px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var expense in filteredExpenses)
+                            {
+                                <tr>
+                                    <td class="text-white">@expense.Date.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-white font-weight-bold">@expense.Description</span>
+                                            @if (expense.IsRecurring)
+                                            {
+                                                <span class="badge d-flex align-items-center gap-1" style="font-size: 0.65rem; padding: 2px 6px; background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" title="Recurring Subscription">
+                                                    🔁 Auto
+                                                </span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(expense.Notes))
+                                        {
+                                            <div class="text-secondary" style="font-size: 0.8rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                @expense.Notes
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="category-badge" style="background-color: @(expense.Category?.Color + "20"); color: @expense.Category?.Color; border: 1px solid @(expense.Category?.Color + "35")">
+                                            @expense.Category?.Icon @expense.Category?.Name
+                                        </span>
+                                    </td>
+                                    <td class="text-white text-end font-weight-bold" style="font-size: 1.05rem;">
+                                        -$@expense.Amount.ToString("N2")
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button class="btn btn-action btn-edit" @onclick="() => OpenEditModal(expense)">Edit</button>
+                                            <button class="btn btn-action btn-delete" @onclick="() => DeleteExpense(expense.Id)">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
-        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-            <!-- Preset Buttons -->
-            <div class="d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-month" ? "active" : "")" @onclick='() => SetDatePreset("this-month")'>This Month</button>
-                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "last-30" ? "active" : "")" @onclick='() => SetDatePreset("last-30")'>Last 30 Days</button>
-                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-year" ? "active" : "")" @onclick='() => SetDatePreset("this-year")'>This Year</button>
-                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "all" ? "active" : "")" @onclick='() => SetDatePreset("all")'>All Time</button>
-            </div>
-            <!-- Action Buttons -->
-            <div class="d-flex gap-2">
-                <button class="btn btn-secondary-custom btn-sm py-1 px-3" @onclick="ResetFilters">Reset Filters</button>
+
+        <!-- Right Column: Subscriptions Commitments Panel -->
+        <div class="col-12 col-lg-4">
+            <div class="glass-card">
+                <h3 class="mb-4 text-white d-flex align-items-center gap-2">
+                    <span>🔁</span> Subscriptions
+                </h3>
+                
+                <div class="p-3 rounded-3 mb-4 text-white text-center" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%); border: 1px solid rgba(239, 68, 68, 0.15);">
+                    <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;">TOTAL MONTHLY COMMITMENT</span>
+                    <h2 class="mb-0 text-danger font-weight-extrabold mt-2" style="font-size: 1.8rem; letter-spacing: -0.02em; text-shadow: 0 0 15px rgba(239, 68, 68, 0.15);">
+                        $@totalSubscriptionsCost.ToString("N2")<span style="font-size: 0.85rem; font-weight: normal; color: var(--text-secondary);">/mo</span>
+                    </h2>
+                </div>
+                
+                @if (!activeSubscriptions.Any())
+                {
+                    <div class="text-center py-5">
+                        <div class="mb-3" style="font-size: 2.2rem;">🔁</div>
+                        <h5 class="text-white">No active subscriptions</h5>
+                        <p class="text-secondary" style="font-size: 0.85rem; line-height: 1.4;">Mark expenses as "Recurring" when logging them to track your committed automated expenses here.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var sub in activeSubscriptions)
+                        {
+                            <div class="p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border-light);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: @(sub.Category?.Color + "15"); color: @sub.Category?.Color; font-size: 1rem; border: 1px solid @(sub.Category?.Color + "25");">
+                                        @sub.Category?.Icon
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-white font-weight-bold" style="font-size: 0.9rem;">@sub.Description</h6>
+                                        <span class="text-secondary" style="font-size: 0.72rem;">Last billed: @sub.Date.ToString("MMM dd")</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-white font-weight-bold" style="font-size: 0.95rem;">-$@sub.Amount.ToString("N2")</span>
+                                    <span class="text-secondary d-block" style="font-size: 0.7rem;">monthly</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
-
-    <!-- Expenses Table -->
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    }
-    else if (!filteredExpenses.Any())
-    {
-        <div class="glass-card text-center py-5">
-            <div class="mb-3" style="font-size: 3rem;">🔍</div>
-            <h4 class="text-white">No expenses matched your search</h4>
-            <p class="text-secondary">Try adjusting your filters or log a new transaction.</p>
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="transaction-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th class="text-end">Amount</th>
-                        <th class="text-center" style="width: 150px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var expense in filteredExpenses)
-                    {
-                        <tr>
-                            <td class="text-white">@expense.Date.ToString("MMM dd, yyyy")</td>
-                            <td>
-                                <div class="text-white font-weight-bold">@expense.Description</div>
-                                @if (!string.IsNullOrWhiteSpace(expense.Notes))
-                                {
-                                    <div class="text-secondary" style="font-size: 0.8rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                        @expense.Notes
-                                    </div>
-                                }
-                            </td>
-                            <td>
-                                <span class="category-badge" style="background-color: @(expense.Category?.Color + "20"); color: @expense.Category?.Color; border: 1px solid @(expense.Category?.Color + "35")">
-                                    @expense.Category?.Icon @expense.Category?.Name
-                                </span>
-                            </td>
-                            <td class="text-white text-end font-weight-bold" style="font-size: 1.05rem;">
-                                -$@expense.Amount.ToString("N2")
-                            </td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <button class="btn btn-action btn-edit" @onclick="() => OpenEditModal(expense)">Edit</button>
-                                    <button class="btn btn-action btn-delete" @onclick="() => DeleteExpense(expense.Id)">Delete</button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
 </div>
 
 <!-- Add/Edit Expense Modal -->
@@ -186,6 +248,12 @@
                             }
                         </InputSelect>
                         <ValidationMessage For="() => editingExpense.CategoryId" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+
+                    <!-- Recurring Toggle -->
+                    <div class="form-check form-switch mt-1">
+                        <InputCheckbox @bind-Value="editingExpense.IsRecurring" class="form-check-input" id="isRecurring" />
+                        <label class="form-check-label text-white ms-2" for="isRecurring" style="font-size: 0.9rem;">Mark as Recurring Subscription</label>
                     </div>
 
                     <!-- Notes -->
@@ -239,6 +307,8 @@
     private List<Expense> allExpenses = new();
     private List<Expense> filteredExpenses = new();
     private List<Category> categories = new();
+    private List<Expense> activeSubscriptions = new();
+    private decimal totalSubscriptionsCost = 0;
 
     // Filters Model
     private string filterSearch = "";
@@ -263,6 +333,7 @@
             categories = await CategoryService.GetCategoriesAsync();
             allExpenses = await ExpenseService.GetExpensesAsync();
             ApplyFilters();
+            UpdateSubscriptionsList();
         }
         catch (Exception ex)
         {
@@ -300,6 +371,18 @@
         }
 
         filteredExpenses = query.ToList();
+    }
+
+    private void UpdateSubscriptionsList()
+    {
+        activeSubscriptions = allExpenses
+            .Where(e => e.IsRecurring)
+            .GroupBy(e => e.Description.Trim().ToLower())
+            .Select(g => g.OrderByDescending(e => e.Date).First())
+            .OrderByDescending(e => e.Amount)
+            .ToList();
+            
+        totalSubscriptionsCost = activeSubscriptions.Sum(s => s.Amount);
     }
 
     // Toast Notifications State
@@ -369,7 +452,8 @@
         editingExpense = new Expense 
         { 
             Date = DateTime.Today,
-            CategoryId = categories.FirstOrDefault()?.Id ?? 0 
+            CategoryId = categories.FirstOrDefault()?.Id ?? 0,
+            IsRecurring = false
         };
         isModalOpen = true;
     }
@@ -383,7 +467,8 @@
             Amount = expense.Amount,
             Date = expense.Date,
             CategoryId = expense.CategoryId,
-            Notes = expense.Notes
+            Notes = expense.Notes,
+            IsRecurring = expense.IsRecurring
         };
         isModalOpen = true;
     }

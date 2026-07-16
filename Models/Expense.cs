@@ -25,4 +25,6 @@ public class Expense
 
     [StringLength(250, ErrorMessage = "Notes cannot exceed 250 characters.")]
     public string? Notes { get; set; }
+
+    public bool IsRecurring { get; set; }
 }
