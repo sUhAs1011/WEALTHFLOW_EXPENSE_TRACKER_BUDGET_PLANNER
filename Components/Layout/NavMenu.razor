@@ -1,36 +1,57 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">🪙 WealthFlow</a>
+<header class="top-navbar">
+    <div class="navbar-container container d-flex align-items-center justify-content-between">
+        <!-- Logo / Brand on Left -->
+        <a class="navbar-logo d-flex align-items-center gap-2" href="">
+            <span class="logo-dot"></span>
+            <span class="logo-text">WealthFlow</span>
+        </a>
+
+        <!-- Mobile Toggler -->
+        <button class="navbar-toggler-custom d-md-none" @onclick="ToggleNavMenu" type="button" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon-custom"></span>
+        </button>
+
+        <!-- Nav Links on Right -->
+        <nav class="navbar-links d-none d-md-flex align-items-center gap-4">
+            <NavLink class="nav-link-horizontal" href="" Match="NavLinkMatch.All">
+                <span>🏠</span> Dashboard
+            </NavLink>
+            <NavLink class="nav-link-horizontal" href="expenses">
+                <span>💸</span> Expenses
+            </NavLink>
+            <NavLink class="nav-link-horizontal" href="budgets">
+                <span>📅</span> Budgets
+            </NavLink>
+            <NavLink class="nav-link-horizontal" href="analytics">
+                <span>📊</span> Analytics
+            </NavLink>
+        </nav>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
+    <!-- Mobile Dropdown Menu -->
+    <div class="mobile-nav-menu d-md-none @(collapseNavMenu ? "collapse" : "")" @onclick="ToggleNavMenu">
+        <nav class="d-flex flex-column p-3 gap-2">
+            <NavLink class="nav-link-horizontal w-100" href="" Match="NavLinkMatch.All">
+                <span>🏠</span> Dashboard
             </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="expenses">
-                <span class="bi bi-cash-coin-nav-menu" aria-hidden="true"></span> Expenses
+            <NavLink class="nav-link-horizontal w-100" href="expenses">
+                <span>💸</span> Expenses
             </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="budgets">
-                <span class="bi bi-piggy-bank-nav-menu" aria-hidden="true"></span> Budgets
+            <NavLink class="nav-link-horizontal w-100" href="budgets">
+                <span>📅</span> Budgets
             </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="analytics">
-                <span class="bi bi-bar-chart-line-nav-menu" aria-hidden="true"></span> Analytics
+            <NavLink class="nav-link-horizontal w-100" href="analytics">
+                <span>📊</span> Analytics
             </NavLink>
-        </div>
-    </nav>
-</div>
+        </nav>
+    </div>
+</header>
 
+@code {
+    private bool collapseNavMenu = true;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

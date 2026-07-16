@@ -398,3 +398,134 @@ main {
         opacity: 1;
     }
 }
+
+/* Horizontal Top Navbar Styling */
+.top-navbar {
+    background: rgba(10, 12, 18, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    padding: 0.85rem 0;
+}
+
+.navbar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.navbar-logo {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.logo-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #00d2ff;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 10px #00d2ff, 0 0 20px #00d2ff;
+}
+
+.logo-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+.nav-link-horizontal {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    transition: var(--transition-smooth);
+}
+
+.nav-link-horizontal:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: white;
+}
+
+.nav-link-horizontal.active {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile Toggler Styles */
+.navbar-toggler-custom {
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.navbar-toggler-icon-custom {
+    width: 20px;
+    height: 2px;
+    background: white;
+    position: relative;
+    display: inline-block;
+}
+
+.navbar-toggler-icon-custom::before,
+.navbar-toggler-icon-custom::after {
+    content: '';
+    width: 20px;
+    height: 2px;
+    background: white;
+    position: absolute;
+    left: 0;
+}
+
+.navbar-toggler-icon-custom::before {
+    top: -6px;
+}
+
+.navbar-toggler-icon-custom::after {
+    top: 6px;
+}
+
+/* Mobile Dropdown styling */
+.mobile-nav-menu {
+    background: rgba(10, 12, 18, 0.98);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-light);
+    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 999;
+    transition: max-height 0.3s ease-in-out;
+}
+
+.mobile-nav-menu.collapse {
+    display: none !important;
+}
+
+/* Main Layout adjustments */
+.app-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    width: 100%;
+}
