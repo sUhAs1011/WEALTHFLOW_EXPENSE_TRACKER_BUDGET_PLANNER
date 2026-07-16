@@ -1,59 +1,66 @@
-# 🪙 WEALTHFLOW_EXPENSE_TRACKER_BUDGET_PLANNER
+# 🪙 WEALTHFLOW — PERSONAL FINANCE TRACKER & BUDGET PLANNER
 
-A premium, modern, and responsive personal finance management dashboard built using **C#**, **ASP.NET Core Blazor Server**, and **Entity Framework Core with SQLite**. 
+A premium, modern, and highly interactive personal finance management dashboard built using **C# 10 / .NET 10.0**, **ASP.NET Core Blazor Web App (Interactive Server)**, and **Entity Framework Core with SQLite**.
 
-This application demonstrates modern enterprise C# web development patterns, showing how to build a clean architecture system with 100% C# frontend and backend code, zero-configuration local database storage, and beautiful responsive styling.
+WealthFlow provides a beautiful dark-themed, glassmorphic interface to track expenses, manage budgets, analyze category breakdowns, and trace monthly financial commitments.
 
 ---
 
 ## 🚀 Key Features
 
-* **📊 Interactive Dashboard**: A visually striking dark-themed dashboard presenting your monthly financial status (Total Spend, Active Budgets, and Recent Transactions) at a glance.
-* **💸 Full-Featured Transaction Manager (CRUD)**: Log, edit, and delete transactions. Categorize expenses and filter or sort through history easily.
-* **🎯 Smart Category Budgets**: Set spending limits on categories (e.g., Food, Entertainment, Transport). The dashboard dynamically updates progress bars and warns you if you are approaching or exceeding your budget.
-* **📈 Visual Analytics**: View interactive, CSS/SVG-driven category distribution charts to see exactly where your money goes.
-* **💾 Data Persistence**: Local SQLite file-based database integration with Entity Framework Core database migrations.
+* **📊 Glowing "Quick Stats" KPI Row**: Four dynamic dashboard cards displaying **Total Monthly Spend**, **Remaining Budget balance** (turns red if over limit), **Highest Spending Sector**, and **Daily Average Burn Rate** with neon hover glows.
+* **🔁 Recurring Subscriptions Tracker**: Toggle transactions as subscriptions (Netflix, Spotify, Rent). The Expenses panel features a dedicated sidebar showing total monthly committed drain, auto-billing dates, and transaction ledger badges.
+* **📥 CSV Export Button**: Download your transaction logs as Excel-compatible `.csv` files. Filtering records dynamically exports only the currently searched subset, complete with a custom filename prompt.
+* **📅 Date Range Presets**: Set filter calendar limits in one click using quick presets (**"This Month"**, **"Last 30 Days"**, **"This Year"**, **"All Time"**).
+* **🎯 Category Limits & Progress Bars**: Set targets for monthly budgets. The Budgets view integrates category progress bars (Green/Yellow/Red alerts) and a master global status card showing total limits vs. actual spending.
+* **📈 Visual Analytics**: CSS and SVG-driven native donut charts and legend weights showing cash flow distribution across categories.
+* **🔔 Thread-Safe Toast System**: Real-time top-right slide-in alerts confirming all transaction actions (Created/Updated/Deleted) and budget modifications.
+* **📱 Horizontal Web Navbar**: Resized as a clean top header navbar containing active tab glows and responsive hamburger support for mobile layouts.
 
 ---
 
 ## 🛠️ Technology Stack
 
-* **Core Framework**: .NET 8.0 / .NET 9.0 (ASP.NET Core Blazor Server)
-* **ORM (Database Access)**: Entity Framework Core
-* **Database**: SQLite (local file-based storage, no database server installation required)
-* **Styling**: Premium custom CSS (Dark glassmorphism style, responsive grid, custom micro-animations)
+* **Core Framework**: .NET 10.0 (ASP.NET Core Blazor Web App)
+* **ORM (Database Access)**: Entity Framework Core 10.0
+* **Database**: SQLite (Zero-configuration file-based DB, auto-generated on launch)
+* **Styling**: Vanilla CSS (Fluid glassmorphism, responsive grids, CSS variables, and keyframe animations)
 
 ---
 
 ## 🏗️ Project Architecture
 
-The project follows clean coding practices and separation of concerns:
+The project follows clean MVC/Service separation patterns:
 
 ```text
-WealthFlow/
+C#_Project/
 │
-├── Data/                       # Database Context & Migrations
-│   ├── ExpenseTrackerDbContext.cs
-│   └── Migrations/
+├── Components/                 # UI Components and Pages
+│   ├── Layout/
+│   │   ├── MainLayout.razor    # Dashboard Shell & Toast Viewport
+│   │   └── NavMenu.razor       # Top Horizontal Header Navigation
+│   ├── Pages/
+│   │   ├── Home.razor          # Main Dashboard & Budget Progress
+│   │   ├── Expenses.razor      # Transaction CRUD & Subscriptions Tracker
+│   │   ├── Budgets.razor       # Set limits & category creator
+│   │   └── Analytics.razor     # SVG breakdown visualization
+│   └── App.razor               # Blazor Entry, JS download helpers
+│
+├── Data/                       # Persistence Context
+│   └── ExpenseTrackerDbContext.cs  # SQLite DbContext & Seeding
 │
 ├── Models/                     # Core Domain Entities
-│   ├── Category.cs             # Expense Category (e.g., Food, Travel)
-│   ├── Expense.cs              # Individual transactions
-│   └── Budget.cs               # Monthly budget limits per category
+│   ├── Category.cs             # Emoji & color tags
+│   ├── Expense.cs              # Date, description, notes, and IsRecurring flag
+│   └── Budget.cs               # Limit amount configuration
 │
-├── Services/                   # Business Logic & DB Interactions
-│   ├── ExpenseService.cs
-│   └── BudgetService.cs
+├── Services/                   # Database Queries & Logic
+│   ├── CategoryService.cs
+│   └── ExpenseService.cs
 │
-├── Pages/                      # Interactive Blazor UI Components
-│   ├── Index.razor             # Dashboard home page
-│   ├── Expenses.razor          # CRUD Interface for transactions
-│   ├── Budgets.razor           # Configure monthly limits
-│   └── Analytics.razor         # Financial breakdown graphs
-│
-└── wwwroot/                    # Static Assets & Styling
-    └── css/
-        └── site.css            # Custom CSS styles (Glassmorphism & animations)
+└── wwwroot/                    # Web Assets
+    ├── app.css                 # Custom glassmorphic styles & animations
+    └── favicon.png
 ```
 
 ---
@@ -61,32 +68,28 @@ WealthFlow/
 ## ⚡ Getting Started
 
 ### Prerequisites
-Make sure you have the **.NET SDK (8.0 or later)** and **Visual Studio 2022** (with the *ASP.NET and web development* workload) installed.
+Ensure you have the **.NET SDK (10.0 or later)** installed.
 
-### Installation & Run
+### Run Instructions (Windows AppLocker / Application Control)
+If your environment has strict Application Control policies blocking executable binary execution inside the `Downloads` directory, compile and run the assembly DLL directly from a trusted directory (like `C:\Users\suhas\C#_Project`):
 
-1. **Scaffold the application** (or open the project folder in your IDE):
-   ```bash
-   cd WealthFlow
+1. **Delete Existing SQLite DB** (required to initialize the new `IsRecurring` schema column):
+   ```cmd
+   del wealthflow.db
    ```
 
-2. **Restore Dependencies & Build**:
-   ```bash
+2. **Build the Application**:
+   ```cmd
    dotnet build
    ```
 
-3. **Run the Application**:
-   ```bash
-   dotnet run
+3. **Start the DLL Host**:
+   ```cmd
+   dotnet bin\Debug\net10.0\C__Project.dll
    ```
-   Open your browser and navigate to `http://localhost:5000` (or the port specified in the terminal).
 
----
+4. **Navigate to App**:
+   Open your browser to the local address outputted in the terminal console (usually `http://localhost:5000` or `https://localhost:5001`). 
 
-## 🔒 Database & Migrations
-
-Entity Framework Core is set up to automatically create and seed the SQLite database (`wealthflow.db`) upon the first startup. 
-
-To manually manage database schema changes, you can use the EF Core CLI:
-* **Add a new migration**: `dotnet ef migrations add <MigrationName>`
-* **Update database**: `dotnet ef database update`
+5. **Hard Refresh**:
+   Perform a hard reload (**`Ctrl + F5`**) in your browser to clear old CSS assets from the cache.
