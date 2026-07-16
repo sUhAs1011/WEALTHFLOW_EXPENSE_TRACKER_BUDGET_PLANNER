@@ -60,10 +60,6 @@
                                     @if (!budgetModel.IsEditing)
                                     {
                                         <button class="btn btn-action btn-edit btn-sm" @onclick="() => budgetModel.IsEditing = true">Edit</button>
-                                        @if (budgetModel.HasBudget)
-                                        {
-                                            <button class="btn btn-action btn-delete btn-sm" @onclick="() => DeleteBudget(budgetModel)" title="Delete Budget">✕</button>
-                                        }
                                     }
                                     else
                                     {
