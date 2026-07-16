@@ -262,18 +262,17 @@
     // Toast Notifications State
     private List<ToastMessage> toasts = new();
 
-    private void ShowToast(string message, string type = "success")
+    private async void ShowToast(string message, string type = "success")
     {
         var toast = new ToastMessage { Message = message, Type = type };
         toasts.Add(toast);
         StateHasChanged();
         
-        // Auto-dismiss after 3.5 seconds
-        _ = Task.Delay(3500).ContinueWith(_ =>
-        {
-            toasts.Remove(toast);
-            InvokeAsync(StateHasChanged);
-        });
+        // Auto-dismiss after 3.5 seconds safely on the UI synchronization context
+        await Task.Delay(3500);
+        
+        toasts.Remove(toast);
+        StateHasChanged();
     }
 
     private class ToastMessage
