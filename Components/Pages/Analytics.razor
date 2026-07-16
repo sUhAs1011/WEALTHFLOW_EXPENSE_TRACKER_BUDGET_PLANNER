@@ -1,0 +1,160 @@
+@page "/analytics"
+@using C__Project.Models
+@using C__Project.Services
+@inject ExpenseService ExpenseService
+
+<PageTitle>WealthFlow — Analytics</PageTitle>
+
+<div class="fade-in">
+    <div class="mb-4">
+        <h1 class="mb-1 text-white">Analytics</h1>
+        <p class="text-secondary">Visual analysis of your category spending distribution</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!categorySpends.Any())
+    {
+        <div class="glass-card text-center py-5">
+            <div class="mb-3" style="font-size: 3rem;">📊</div>
+            <h4 class="text-white">No expenses recorded for this month</h4>
+            <p class="text-secondary">Please add transaction details to visualize analytics.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Left Side: SVG Donut Chart -->
+            <div class="col-12 col-md-5">
+                <div class="glass-card text-center d-flex flex-column align-items-center justify-content-center h-100">
+                    <h3 class="mb-4 text-white w-100 text-start">Expense Share</h3>
+                    
+                    <div class="chart-container-donut">
+                        <svg width="220" height="220" viewBox="0 0 220 220" style="transform: rotate(-90deg);">
+                            <circle cx="110" cy="110" r="70" fill="transparent" stroke="rgba(255,255,255,0.03)" stroke-width="24" />
+                            
+                            @{
+                                double cumulativePercentage = 0;
+                                foreach (var spend in categorySpends)
+                                {
+                                    var percentage = (double)(totalSpend > 0 ? spend.Amount / totalSpend : 0);
+                                    var strokeLength = percentage * Circumference;
+                                    var strokeGap = Circumference - strokeLength;
+                                    var rotation = cumulativePercentage * 360;
+                                    
+                                    <circle cx="110" cy="110" r="70" 
+                                            fill="transparent" 
+                                            stroke="@spend.Color" 
+                                            stroke-width="24" 
+                                            stroke-dasharray="@($"{strokeLength.ToString("F2")} {strokeGap.ToString("F2")}")" 
+                                            style="transform-origin: 110px 110px; transform: rotate(@(rotation.ToString("F2"))deg); transition: stroke-dasharray 0.5s ease-in-out;" />
+                                    
+                                    cumulativePercentage += percentage;
+                                }
+                            }
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="text-secondary text-uppercase d-block mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Total Spent</span>
+                            <h3 class="mb-0 text-white font-weight-extrabold" style="font-size: 1.5rem;">$@totalSpend.ToString("N0")</h3>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 w-100 mt-4 align-items-start px-2">
+                        @foreach (var spend in categorySpends)
+                        {
+                            var pct = totalSpend > 0 ? (spend.Amount / totalSpend) * 100 : 0;
+                            <div class="d-flex justify-content-between align-items-center w-100" style="font-size: 0.9rem;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-circle" style="width: 12px; height: 12px; background-color: @spend.Color; display: inline-block;"></span>
+                                    <span class="text-white">@spend.Icon @spend.CategoryName</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-white font-weight-bold">$@spend.Amount.ToString("N2")</span>
+                                    <span class="text-secondary" style="font-size: 0.8rem; margin-left: 0.25rem;">(@pct.ToString("N1")%)</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Category Progress Bars & Distribution -->
+            <div class="col-12 col-md-7">
+                <div class="glass-card h-100">
+                    <h3 class="mb-4 text-white">Sector Distribution</h3>
+                    <p class="text-secondary mb-4" style="font-size: 0.9rem;">Visual overview of how your spending scales across categories.</p>
+
+                    <div class="d-flex flex-column gap-4">
+                        @foreach (var spend in categorySpends)
+                        {
+                            var pct = totalSpend > 0 ? (double)(spend.Amount / totalSpend) * 100 : 0;
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="category-badge" style="background-color: @(spend.Color + "20"); color: @spend.Color; border: 1px solid @(spend.Color + "35");">
+                                            @spend.Icon @spend.CategoryName
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="text-white font-weight-bold">$@spend.Amount.ToString("N2")</span>
+                                        <span class="text-secondary ms-1" style="font-size: 0.8rem;">(@pct.ToString("N1")%)</span>
+                                    </div>
+                                </div>
+                                <div class="progress-bar-wrapper" style="height: 10px;">
+                                    <div class="progress-bar-fill" 
+                                         style="width: @pct%; background-color: @spend.Color; box-shadow: 0 0 10px @(spend.Color + "40");">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private decimal totalSpend = 0;
+    private List<CategorySpend> categorySpends = new();
+    
+    // SVG Donut Math Properties
+    private const double Radius = 70;
+    private const double Circumference = 2 * Math.PI * Radius; // ~439.82
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var year = DateTime.Today.Year;
+            var month = DateTime.Today.Month;
+            
+            // Fetch total expenses for the month
+            totalSpend = await ExpenseService.GetTotalExpensesForMonthAsync(year, month);
+            
+            // Fetch categorized spending breakdowns
+            categorySpends = await ExpenseService.GetExpensesByCategoryForMonthAsync(year, month);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading analytics data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

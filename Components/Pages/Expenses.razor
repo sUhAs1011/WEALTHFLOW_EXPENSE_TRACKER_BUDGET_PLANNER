@@ -1,0 +1,317 @@
+@page "/expenses"
+@using C__Project.Models
+@using C__Project.Services
+@inject ExpenseService ExpenseService
+@inject CategoryService CategoryService
+
+<PageTitle>WealthFlow — Expenses</PageTitle>
+
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1 text-white">Expenses</h1>
+            <p class="text-secondary mb-0">Log, search, and manage your day-to-day transactions</p>
+        </div>
+        <div>
+            <button class="btn btn-primary-custom" @onclick="OpenAddModal">+ Log Expense</button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="glass-card mb-4">
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <label class="form-label text-secondary" style="font-size: 0.85rem;">Search Description / Notes</label>
+                <input type="text" class="form-control" placeholder="Search..." @bind="filterSearch" @bind:event="oninput" @onkeyup="ApplyFilters" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label text-secondary" style="font-size: 0.85rem;">Category</label>
+                <select class="form-select" @bind="filterCategoryId" @bind:after="ApplyFilters">
+                    <option value="@(0)">All Categories</option>
+                    @foreach (var cat in categories)
+                    {
+                        <option value="@cat.Id">@cat.Icon @cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3 col-md-2.5">
+                <label class="form-label text-secondary" style="font-size: 0.85rem;">Start Date</label>
+                <input type="date" class="form-control" @bind="filterStartDate" @bind:after="ApplyFilters" />
+            </div>
+            <div class="col-6 col-sm-3 col-md-2.5">
+                <label class="form-label text-secondary" style="font-size: 0.85rem;">End Date</label>
+                <input type="date" class="form-control" @bind="filterEndDate" @bind:after="ApplyFilters" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3 gap-2">
+            <button class="btn btn-secondary-custom btn-sm py-1 px-3" @onclick="ResetFilters">Reset Filters</button>
+        </div>
+    </div>
+
+    <!-- Expenses Table -->
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!filteredExpenses.Any())
+    {
+        <div class="glass-card text-center py-5">
+            <div class="mb-3" style="font-size: 3rem;">🔍</div>
+            <h4 class="text-white">No expenses matched your search</h4>
+            <p class="text-secondary">Try adjusting your filters or log a new transaction.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center" style="width: 150px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var expense in filteredExpenses)
+                    {
+                        <tr>
+                            <td class="text-white">@expense.Date.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <div class="text-white font-weight-bold">@expense.Description</div>
+                                @if (!string.IsNullOrWhiteSpace(expense.Notes))
+                                {
+                                    <div class="text-secondary" style="font-size: 0.8rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        @expense.Notes
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="category-badge" style="background-color: @(expense.Category?.Color + "20"); color: @expense.Category?.Color; border: 1px solid @(expense.Category?.Color + "35")">
+                                    @expense.Category?.Icon @expense.Category?.Name
+                                </span>
+                            </td>
+                            <td class="text-white text-end font-weight-bold" style="font-size: 1.05rem;">
+                                -$@expense.Amount.ToString("N2")
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button class="btn btn-action btn-edit" @onclick="() => OpenEditModal(expense)">Edit</button>
+                                    <button class="btn btn-action btn-delete" @onclick="() => DeleteExpense(expense.Id)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Expense Modal -->
+@if (isModalOpen)
+{
+    <div class="modal-backdrop-custom">
+        <div class="modal-content-custom glass-card p-0">
+            <div class="p-4 border-bottom border-secondary d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
+                <h4 class="mb-0 text-white">@(editingExpense.Id == 0 ? "Log New Expense" : "Edit Expense")</h4>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+            </div>
+            
+            <EditForm Model="editingExpense" OnValidSubmit="SaveExpense">
+                <DataAnnotationsValidator />
+                
+                <div class="p-4 d-flex flex-column gap-3">
+                    <!-- Description -->
+                    <div>
+                        <label class="form-label">Description</label>
+                        <InputText @bind-Value="editingExpense.Description" class="form-control" placeholder="e.g. Weekly Groceries" />
+                        <ValidationMessage For="() => editingExpense.Description" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Amount -->
+                        <div class="col-6">
+                            <label class="form-label">Amount ($)</label>
+                            <InputNumber @bind-Value="editingExpense.Amount" class="form-control" placeholder="0.00" />
+                            <ValidationMessage For="() => editingExpense.Amount" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                        </div>
+                        
+                        <!-- Date -->
+                        <div class="col-6">
+                            <label class="form-label">Date</label>
+                            <InputDate @bind-Value="editingExpense.Date" class="form-control" />
+                            <ValidationMessage For="() => editingExpense.Date" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                        </div>
+                    </div>
+
+                    <!-- Category selection -->
+                    <div>
+                        <label class="form-label">Category</label>
+                        <InputSelect @bind-Value="editingExpense.CategoryId" class="form-select">
+                            <option value="@(0)" disabled>Select Category</option>
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id">@cat.Icon @cat.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => editingExpense.CategoryId" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="form-label">Notes (Optional)</label>
+                        <InputTextArea @bind-Value="editingExpense.Notes" class="form-control" rows="3" placeholder="Add additional notes here..." />
+                        <ValidationMessage For="() => editingExpense.Notes" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+                </div>
+
+                <div class="p-4 border-top border-secondary d-flex justify-content-end gap-2" style="background: rgba(255, 255, 255, 0.02);">
+                    <button type="button" class="btn btn-secondary-custom" @onclick="CloseModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom">Save</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool isModalOpen = false;
+    private List<Expense> allExpenses = new();
+    private List<Expense> filteredExpenses = new();
+    private List<Category> categories = new();
+
+    // Filters Model
+    private string filterSearch = "";
+    private int filterCategoryId = 0;
+    private DateTime? filterStartDate;
+    private DateTime? filterEndDate;
+
+    // Editing State
+    private Expense editingExpense = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            categories = await CategoryService.GetCategoriesAsync();
+            allExpenses = await ExpenseService.GetExpensesAsync();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading expenses: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allExpenses.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filterSearch))
+        {
+            query = query.Where(e => e.Description.Contains(filterSearch, StringComparison.OrdinalIgnoreCase) || 
+                                     (e.Notes != null && e.Notes.Contains(filterSearch, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (filterCategoryId > 0)
+        {
+            query = query.Where(e => e.CategoryId == filterCategoryId);
+        }
+
+        if (filterStartDate.HasValue)
+        {
+            query = query.Where(e => e.Date >= filterStartDate.Value);
+        }
+
+        if (filterEndDate.HasValue)
+        {
+            query = query.Where(e => e.Date <= filterEndDate.Value);
+        }
+
+        filteredExpenses = query.ToList();
+    }
+
+    private void ResetFilters()
+    {
+        filterSearch = "";
+        filterCategoryId = 0;
+        filterStartDate = null;
+        filterEndDate = null;
+        ApplyFilters();
+    }
+
+    private void OpenAddModal()
+    {
+        editingExpense = new Expense 
+        { 
+            Date = DateTime.Today,
+            CategoryId = categories.FirstOrDefault()?.Id ?? 0 
+        };
+        isModalOpen = true;
+    }
+
+    private void OpenEditModal(Expense expense)
+    {
+        editingExpense = new Expense
+        {
+            Id = expense.Id,
+            Description = expense.Description,
+            Amount = expense.Amount,
+            Date = expense.Date,
+            CategoryId = expense.CategoryId,
+            Notes = expense.Notes
+        };
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task SaveExpense()
+    {
+        if (editingExpense.CategoryId <= 0)
+        {
+            return;
+        }
+
+        bool result = await ExpenseService.SaveExpenseAsync(editingExpense);
+        if (result)
+        {
+            isModalOpen = false;
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteExpense(int id)
+    {
+        bool confirmed = true; // For Blazor Server, standard JS confirm or a modal can be used. We'll execute directly.
+        if (confirmed)
+        {
+            bool result = await ExpenseService.DeleteExpenseAsync(id);
+            if (result)
+            {
+                await LoadData();
+            }
+        }
+    }
+}

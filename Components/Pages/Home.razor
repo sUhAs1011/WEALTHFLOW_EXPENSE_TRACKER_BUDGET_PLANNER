@@ -1,0 +1,303 @@
+@page "/"
+@using C__Project.Models
+@using C__Project.Services
+@inject ExpenseService ExpenseService
+@inject CategoryService CategoryService
+
+<PageTitle>WealthFlow — Dashboard</PageTitle>
+
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1 text-white">Financial Dashboard</h1>
+            <p class="text-secondary mb-0">Overview of your spending, categories, and budgets for @DateTime.Today.ToString("MMMM yyyy")</p>
+        </div>
+        <div>
+            <a href="expenses" class="btn btn-primary-custom">+ Add Expense</a>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Alert Box for Exceeded Budgets -->
+        @if (exceededBudgetsList.Any())
+        {
+            <div class="alert alert-danger glass-card border-danger pulse-warning d-flex align-items-center gap-3 mb-4" role="alert" style="background: rgba(239, 68, 68, 0.15);">
+                <div style="font-size: 2rem;">⚠️</div>
+                <div>
+                    <h5 class="alert-heading text-danger mb-1 font-weight-bold">Budget Alerts!</h5>
+                    <p class="mb-0 text-white">
+                        You have exceeded your monthly budget for: 
+                        <strong>@string.Join(", ", exceededBudgetsList.Select(b => $"{b.Category?.Icon} {b.Category?.Name}"))</strong>.
+                    </p>
+                </div>
+            </div>
+        }
+
+        <!-- Top KPI Cards Row -->
+        <div class="row g-4 mb-5">
+            <!-- Total Spent Card -->
+            <div class="col-12 col-md-4">
+                <div class="glass-card d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Total Spent This Month</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold">$@totalMonthSpent.ToString("N2")</h2>
+                        <span class="text-secondary" style="font-size: 0.85rem;">from @expensesCount transactions</span>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 1.5rem;">
+                        💳
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Budgets Card -->
+            <div class="col-12 col-md-4">
+                <div class="glass-card d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Budget Status</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold">@exceededBudgetsCount / @totalBudgetsCount</h2>
+                        <span class="@(exceededBudgetsCount > 0 ? "text-danger" : "text-success")" style="font-size: 0.85rem;">
+                            @(exceededBudgetsCount > 0 ? $"{exceededBudgetsCount} budget(s) exceeded" : "All budgets within limit")
+                        </span>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: @(exceededBudgetsCount > 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)"); color: @(exceededBudgetsCount > 0 ? "#f87171" : "#34d399"); font-size: 1.5rem;">
+                        🎯
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Expense Category Card -->
+            <div class="col-12 col-md-4">
+                <div class="glass-card d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Highest Spending Sector</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold">
+                            @(!string.IsNullOrEmpty(topCategoryName) ? topCategoryName : "None")
+                        </h2>
+                        <span class="text-secondary" style="font-size: 0.85rem;">
+                            @(!string.IsNullOrEmpty(topCategoryName) ? $"${topCategoryAmount.ToString("N2")} spent" : "$0.00 spent")
+                        </span>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 1.5rem;">
+                        📈
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Side: Budgets Progress Tracker -->
+            <div class="col-12 col-lg-7">
+                <div class="glass-card h-100">
+                    <h3 class="mb-4 text-white">Monthly Budgets Tracker</h3>
+                    
+                    @if (!categoriesWithBudgets.Any())
+                    {
+                        <div class="text-center py-5">
+                            <div class="mb-3" style="font-size: 2.5rem;">🎯</div>
+                            <h5 class="text-white">No active budgets for this month</h5>
+                            <p class="text-secondary">Set spending limits on your categories to track progress.</p>
+                            <a href="budgets" class="btn btn-secondary-custom btn-sm mt-2">Manage Budgets</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-4">
+                            @foreach (var budgetItem in categoriesWithBudgets)
+                            {
+                                var percentage = budgetItem.BudgetLimit > 0 ? (budgetItem.CurrentSpend / budgetItem.BudgetLimit) * 100 : 0;
+                                var isExceeded = budgetItem.CurrentSpend > budgetItem.BudgetLimit;
+                                var isWarning = !isExceeded && percentage >= 85;
+                                
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="category-badge" style="background-color: @(budgetItem.Color + "20"); color: @budgetItem.Color; border: 1px solid @(budgetItem.Color + "35")">
+                                                @budgetItem.Icon @budgetItem.CategoryName
+                                            </span>
+                                            @if (isExceeded)
+                                            {
+                                                <span class="badge bg-danger rounded-pill px-2 py-1 font-weight-bold" style="font-size: 0.7rem;">OVER BUDGET</span>
+                                            }
+                                            else if (isWarning)
+                                            {
+                                                <span class="badge bg-warning text-dark rounded-pill px-2 py-1 font-weight-bold" style="font-size: 0.7rem;">WARNING</span>
+                                            }
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="text-white font-weight-bold">$@budgetItem.CurrentSpend.ToString("N0")</span>
+                                            <span class="text-secondary" style="font-size: 0.85rem;"> / $@budgetItem.BudgetLimit.ToString("N0")</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="progress-bar-wrapper">
+                                        <div class="progress-bar-fill @(isExceeded ? "progress-danger" : isWarning ? "progress-warning" : "progress-success")" 
+                                             style="width: @(Math.Min(percentage, 100))%">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mt-1" style="font-size: 0.8rem;">
+                                        <span class="text-secondary">@percentage.ToString("N0")% used</span>
+                                        <span class="text-secondary">
+                                            @if (isExceeded)
+                                            {
+                                                <span class="text-danger font-weight-bold">+$@((budgetItem.CurrentSpend - budgetItem.BudgetLimit).ToString("N2")) over</span>
+                                            }
+                                            else
+                                            {
+                                                <span>$@((budgetItem.BudgetLimit - budgetItem.CurrentSpend).ToString("N2")) remaining</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Side: Recent Transactions -->
+            <div class="col-12 col-lg-5">
+                <div class="glass-card h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="mb-0 text-white">Recent Transactions</h3>
+                        <a href="expenses" class="btn btn-secondary-custom btn-sm py-1 px-3" style="font-size: 0.85rem;">View All</a>
+                    </div>
+
+                    @if (!recentExpenses.Any())
+                    {
+                        <div class="text-center py-5">
+                            <div class="mb-3" style="font-size: 2.5rem;">💸</div>
+                            <h5 class="text-white">No transactions logged yet</h5>
+                            <p class="text-secondary">Create your first expense to see it here.</p>
+                            <a href="expenses" class="btn btn-primary-custom btn-sm mt-2">Add Expense</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var expense in recentExpenses)
+                            {
+                                <div class="d-flex justify-content-between align-items-center p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(99, 102, 241, 0.2)'" onmouseout="this.style.borderColor='var(--border-light)'">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: @(expense.Category?.Color + "15"); color: @expense.Category?.Color; font-size: 1.2rem; border: 1px solid @(expense.Category?.Color + "30");">
+                                            @expense.Category?.Icon
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 text-white font-weight-bold">@expense.Description</h6>
+                                            <span class="text-secondary" style="font-size: 0.75rem;">@expense.Date.ToString("MMM dd, yyyy")</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="text-white font-weight-bold" style="font-size: 1rem;">-$@expense.Amount.ToString("N2")</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private decimal totalMonthSpent = 0;
+    private int expensesCount = 0;
+    private int totalBudgetsCount = 0;
+    private int exceededBudgetsCount = 0;
+    private string topCategoryName = "";
+    private decimal topCategoryAmount = 0;
+
+    private List<Expense> recentExpenses = new();
+    private List<BudgetProgress> categoriesWithBudgets = new();
+    private List<Budget> exceededBudgetsList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var year = DateTime.Today.Year;
+            var month = DateTime.Today.Month;
+
+            // Fetch recent transactions
+            recentExpenses = await ExpenseService.GetRecentExpensesAsync(5);
+
+            // Fetch monthly totals
+            totalMonthSpent = await ExpenseService.GetTotalExpensesForMonthAsync(year, month);
+            var monthlyExpenses = await ExpenseService.GetExpensesFilteredAsync(null, null, new DateTime(year, month, 1), new DateTime(year, month, DateTime.DaysInMonth(year, month)));
+            expensesCount = monthlyExpenses.Count;
+
+            // Fetch categories and budgets
+            var categories = await CategoryService.GetCategoriesAsync();
+            var budgets = categories.Where(c => c.Budget != null).Select(c => c.Budget!).ToList();
+            totalBudgetsCount = budgets.Count;
+
+            // Calculate budget progress
+            categoriesWithBudgets.Clear();
+            exceededBudgetsList.Clear();
+            exceededBudgetsCount = 0;
+
+            foreach (var category in categories)
+            {
+                var categoryMonthSpend = monthlyExpenses.Where(e => e.CategoryId == category.Id).Sum(e => e.Amount);
+
+                if (category.Budget != null)
+                {
+                    var item = new BudgetProgress
+                    {
+                        CategoryId = category.Id,
+                        CategoryName = category.Name,
+                        Icon = category.Icon,
+                        Color = category.Color,
+                        BudgetLimit = category.Budget.Amount,
+                        CurrentSpend = categoryMonthSpend
+                    };
+                    categoriesWithBudgets.Add(item);
+
+                    if (categoryMonthSpend > category.Budget.Amount)
+                    {
+                        exceededBudgetsCount++;
+                        exceededBudgetsList.Add(category.Budget);
+                    }
+                }
+            }
+
+            // Find top spending category
+            var categorySpends = await ExpenseService.GetExpensesByCategoryForMonthAsync(year, month);
+            if (categorySpends.Any())
+            {
+                topCategoryName = $"{categorySpends.First().Icon} {categorySpends.First().CategoryName}";
+                topCategoryAmount = categorySpends.First().Amount;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log exception or handle it
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class BudgetProgress
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = "";
+        public string Icon { get; set; } = "📁";
+        public string Color { get; set; } = "#ffffff";
+        public decimal BudgetLimit { get; set; }
+        public decimal CurrentSpend { get; set; }
+    }
+}

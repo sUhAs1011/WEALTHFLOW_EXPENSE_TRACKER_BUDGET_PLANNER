@@ -1,0 +1,249 @@
+@page "/budgets"
+@using C__Project.Models
+@using C__Project.Services
+@inject CategoryService CategoryService
+
+<PageTitle>WealthFlow — Budgets & Categories</PageTitle>
+
+<div class="fade-in">
+    <div class="mb-4">
+        <h1 class="mb-1 text-white">Budgets & Categories</h1>
+        <p class="text-secondary">Set monthly limits for your expense sectors and customize your categories</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Left Side: Budgets Setup -->
+            <div class="col-12 col-lg-7">
+                <div class="glass-card">
+                    <h3 class="mb-4 text-white">Set Monthly Limits</h3>
+                    <p class="text-secondary" style="font-size: 0.9rem;">
+                        Establish targets for <strong>@DateTime.Today.ToString("MMMM yyyy")</strong>. 
+                        Enter `0` or leave empty to disable the budget for that category.
+                    </p>
+
+                    <div class="d-flex flex-column gap-3 mt-4">
+                        @foreach (var budgetModel in budgetForms)
+                        {
+                            <div class="p-3 rounded-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: @(budgetModel.Color + "15"); color: @budgetModel.Color; font-size: 1.2rem; border: 1px solid @(budgetModel.Color + "30");">
+                                        @budgetModel.Icon
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-white font-weight-bold">@budgetModel.CategoryName</h6>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">
+                                            @(budgetModel.HasBudget ? $"Current limit: ${budgetModel.Amount:N0}" : "No budget configured")
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="input-group input-group-sm" style="width: 160px;">
+                                        <span class="input-group-text bg-dark border-secondary text-secondary">$</span>
+                                        <input type="number" class="form-control form-control-sm" placeholder="Limit" @bind="budgetModel.Amount" min="0" />
+                                    </div>
+                                    <button class="btn btn-action btn-edit btn-sm" @onclick="() => SaveBudget(budgetModel)">Save</button>
+                                    @if (budgetModel.HasBudget)
+                                    {
+                                        <button class="btn btn-action btn-delete btn-sm" @onclick="() => DeleteBudget(budgetModel)" title="Delete Budget">✕</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Categories Manager -->
+            <div class="col-12 col-lg-5">
+                <!-- Create Category Card -->
+                <div class="glass-card mb-4">
+                    <h3 class="mb-4 text-white">Create Category</h3>
+                    
+                    <EditForm Model="newCategory" OnValidSubmit="CreateCategory">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="d-flex flex-column gap-3">
+                            <!-- Name -->
+                            <div>
+                                <label class="form-label">Category Name</label>
+                                <InputText @bind-Value="newCategory.Name" class="form-control" placeholder="e.g. Health & Fitness" />
+                                <ValidationMessage For="() => newCategory.Name" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                            </div>
+
+                            <div class="row g-3">
+                                <!-- Icon / Emoji selection -->
+                                <div class="col-6">
+                                    <label class="form-label">Icon (Emoji)</label>
+                                    <InputSelect @bind-Value="newCategory.Icon" class="form-select">
+                                        <option value="📁">📁 Folder</option>
+                                        <option value="🥗">🥗 Health</option>
+                                        <option value="🏋️">🏋️ Fitness</option>
+                                        <option value="📚">📚 Education</option>
+                                        <option value="🎁">🎁 Gifts</option>
+                                        <option value="✈️">✈️ Travel</option>
+                                        <option value="💇">💇 Self Care</option>
+                                        <option value="🐶">🐶 Pets</option>
+                                        <option value="🛠️">🛠️ Home Care</option>
+                                        <option value="📈">📈 Invest</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="() => newCategory.Icon" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                                </div>
+
+                                <!-- Theme Color -->
+                                <div class="col-6">
+                                    <label class="form-label">Theme Color</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="color" class="form-control form-control-color" style="width: 50px; padding: 4px; height: 42px;" @bind="categoryColorHex" />
+                                        <input type="text" class="form-control" style="font-size: 0.85rem;" @bind="categoryColorHex" placeholder="#ffffff" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-custom w-100 mt-2">Add Category</button>
+                        </div>
+                    </EditForm>
+                </div>
+
+                <!-- Existing Categories List -->
+                <div class="glass-card">
+                    <h3 class="mb-4 text-white">Active Sectors</h3>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var cat in categories)
+                        {
+                            <span class="category-badge py-2 px-3 align-items-center" style="background-color: @(cat.Color + "15"); color: @cat.Color; border: 1px solid @(cat.Color + "30"); font-size: 0.9rem;">
+                                <span>@cat.Icon</span>
+                                <span class="text-white font-weight-bold ms-1">@cat.Name</span>
+                                @if (cat.Id > 6) // Only allow deletion of user-added categories, not seeded base ones
+                                {
+                                    <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 0.65rem;" @onclick="() => DeleteCategory(cat.Id)"></button>
+                                }
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<Category> categories = new();
+    private List<BudgetModelForm> budgetForms = new();
+    
+    // New Category Form Models
+    private Category newCategory = new() { Icon = "📁" };
+    private string categoryColorHex = "#6366f1";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            categories = await CategoryService.GetCategoriesAsync();
+            
+            var today = DateTime.Today;
+            budgetForms = categories.Select(c => new BudgetModelForm
+            {
+                CategoryId = c.Id,
+                CategoryName = c.Name,
+                Icon = c.Icon,
+                Color = c.Color,
+                BudgetId = c.Budget?.Id ?? 0,
+                Amount = c.Budget?.Amount ?? 0,
+                HasBudget = c.Budget != null,
+                Month = c.Budget?.Month ?? new DateTime(today.Year, today.Month, 1)
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading categories/budgets: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveBudget(BudgetModelForm form)
+    {
+        if (form.Amount < 0) return;
+
+        var budget = new Budget
+        {
+            Id = form.BudgetId,
+            CategoryId = form.CategoryId,
+            Amount = form.Amount,
+            Month = form.Month
+        };
+
+        bool result = await CategoryService.SaveBudgetAsync(budget);
+        if (result)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteBudget(BudgetModelForm form)
+    {
+        if (form.BudgetId > 0)
+        {
+            bool result = await CategoryService.DeleteBudgetAsync(form.BudgetId);
+            if (result)
+            {
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task CreateCategory()
+    {
+        newCategory.Color = categoryColorHex;
+        
+        bool result = await CategoryService.SaveCategoryAsync(newCategory);
+        if (result)
+        {
+            // Reset form
+            newCategory = new Category { Icon = "📁" };
+            categoryColorHex = "#6366f1";
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteCategory(int id)
+    {
+        bool result = await CategoryService.DeleteCategoryAsync(id);
+        if (result)
+        {
+            await LoadData();
+        }
+    }
+
+    // Helper model to simplify inline forms in Blazor
+    private class BudgetModelForm
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Color { get; set; } = "";
+        public int BudgetId { get; set; }
+        public decimal Amount { get; set; }
+        public bool HasBudget { get; set; }
+        public DateTime Month { get; set; }
+    }
+}
