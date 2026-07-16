@@ -5,6 +5,16 @@
 
 <PageTitle>WealthFlow — Budgets & Categories</PageTitle>
 
+<div class="toast-container">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast-custom toast-@toast.Type">
+            <span>@(toast.Type == "success" ? "✅" : toast.Type == "danger" ? "❌" : "⚠️")</span>
+            <span class="toast-message">@toast.Message</span>
+        </div>
+    }
+</div>
+
 <div class="fade-in">
     <div class="mb-4">
         <h1 class="mb-1 text-white">Budgets & Categories</h1>
@@ -145,6 +155,30 @@
     private Category newCategory = new() { Icon = "📁" };
     private string categoryColorHex = "#6366f1";
 
+    // Toast Notifications State
+    private List<ToastMessage> toasts = new();
+
+    private void ShowToast(string message, string type = "success")
+    {
+        var toast = new ToastMessage { Message = message, Type = type };
+        toasts.Add(toast);
+        StateHasChanged();
+        
+        // Auto-dismiss after 3.5 seconds
+        _ = Task.Delay(3500).ContinueWith(_ =>
+        {
+            toasts.Remove(toast);
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private class ToastMessage
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success";
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -195,7 +229,12 @@
         bool result = await CategoryService.SaveBudgetAsync(budget);
         if (result)
         {
+            ShowToast($"Budget for {form.CategoryName} saved successfully!");
             await LoadData();
+        }
+        else
+        {
+            ShowToast("Failed to save budget limit.", "danger");
         }
     }
 
@@ -206,7 +245,12 @@
             bool result = await CategoryService.DeleteBudgetAsync(form.BudgetId);
             if (result)
             {
+                ShowToast($"Budget for {form.CategoryName} removed.", "warning");
                 await LoadData();
+            }
+            else
+            {
+                ShowToast("Failed to remove budget limit.", "danger");
             }
         }
     }
@@ -214,14 +258,20 @@
     private async Task CreateCategory()
     {
         newCategory.Color = categoryColorHex;
+        var name = newCategory.Name;
         
         bool result = await CategoryService.SaveCategoryAsync(newCategory);
         if (result)
         {
+            ShowToast($"Category '{name}' created successfully!");
             // Reset form
             newCategory = new Category { Icon = "📁" };
             categoryColorHex = "#6366f1";
             await LoadData();
+        }
+        else
+        {
+            ShowToast("Failed to create category.", "danger");
         }
     }
 
@@ -230,7 +280,12 @@
         bool result = await CategoryService.DeleteCategoryAsync(id);
         if (result)
         {
+            ShowToast("Category deleted.", "warning");
             await LoadData();
+        }
+        else
+        {
+            ShowToast("Failed to delete category.", "danger");
         }
     }
 

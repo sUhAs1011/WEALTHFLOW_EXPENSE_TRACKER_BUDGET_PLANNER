@@ -6,6 +6,16 @@
 
 <PageTitle>WealthFlow — Expenses</PageTitle>
 
+<div class="toast-container">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast-custom toast-@toast.Type">
+            <span>@(toast.Type == "success" ? "✅" : toast.Type == "danger" ? "❌" : "⚠️")</span>
+            <span class="toast-message">@toast.Message</span>
+        </div>
+    }
+</div>
+
 <div class="fade-in">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -249,6 +259,30 @@
         filteredExpenses = query.ToList();
     }
 
+    // Toast Notifications State
+    private List<ToastMessage> toasts = new();
+
+    private void ShowToast(string message, string type = "success")
+    {
+        var toast = new ToastMessage { Message = message, Type = type };
+        toasts.Add(toast);
+        StateHasChanged();
+        
+        // Auto-dismiss after 3.5 seconds
+        _ = Task.Delay(3500).ContinueWith(_ =>
+        {
+            toasts.Remove(toast);
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private class ToastMessage
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success";
+    }
+
     private void ResetFilters()
     {
         filterSearch = "";
@@ -294,11 +328,17 @@
             return;
         }
 
+        var isNew = editingExpense.Id == 0;
         bool result = await ExpenseService.SaveExpenseAsync(editingExpense);
         if (result)
         {
             isModalOpen = false;
+            ShowToast(isNew ? "Transaction logged successfully!" : "Transaction updated successfully!");
             await LoadData();
+        }
+        else
+        {
+            ShowToast("Failed to save transaction.", "danger");
         }
     }
 
@@ -310,7 +350,12 @@
             bool result = await ExpenseService.DeleteExpenseAsync(id);
             if (result)
             {
+                ShowToast("Transaction deleted successfully.", "warning");
                 await LoadData();
+            }
+            else
+            {
+                ShowToast("Failed to delete transaction.", "danger");
             }
         }
     }
