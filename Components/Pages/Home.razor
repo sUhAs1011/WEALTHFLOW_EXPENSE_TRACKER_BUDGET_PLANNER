@@ -74,7 +74,7 @@
                             }
                         </h2>
                         <span class="text-secondary" style="font-size: 0.78rem;">
-                            @(totalBudgetLimit > 0 ? $"of $@totalBudgetLimit.ToString("N0") limit" : "No active budgets")
+                            @(totalBudgetLimit > 0 ? "of $" + totalBudgetLimit.ToString("N0") + " limit" : "No active budgets")
                         </span>
                     </div>
                     <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" 

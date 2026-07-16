@@ -3,6 +3,7 @@
 @using C__Project.Services
 @inject ExpenseService ExpenseService
 @inject CategoryService CategoryService
+@inject IJSRuntime JS
 
 <PageTitle>WealthFlow — Expenses</PageTitle>
 
@@ -22,7 +23,10 @@
             <h1 class="mb-1 text-white">Expenses</h1>
             <p class="text-secondary mb-0">Log, search, and manage your day-to-day transactions</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-secondary-custom d-flex align-items-center gap-2" @onclick="ExportToCsv">
+                <span>📥</span> Export CSV
+            </button>
             <button class="btn btn-primary-custom" @onclick="OpenAddModal">+ Log Expense</button>
         </div>
     </div>
@@ -357,5 +361,42 @@
                 ShowToast("Failed to delete transaction.", "danger");
             }
         }
+    }
+
+    private async Task ExportToCsv()
+    {
+        if (filteredExpenses == null || !filteredExpenses.Any())
+        {
+            ShowToast("No transactions found to export.", "warning");
+            return;
+        }
+
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Date,Category,Description,Amount,Notes");
+
+        foreach (var expense in filteredExpenses)
+        {
+            var dateStr = expense.Date.ToString("yyyy-MM-dd");
+            var categoryStr = CleanCsvField(expense.Category?.Name ?? "Uncategorized");
+            var descStr = CleanCsvField(expense.Description);
+            var amountStr = expense.Amount.ToString("F2");
+            var notesStr = CleanCsvField(expense.Notes ?? "");
+
+            csv.AppendLine($"{dateStr},{categoryStr},{descStr},{amountStr},{notesStr}");
+        }
+
+        var fileName = $"WealthFlow_Expenses_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("downloadFileFromText", fileName, csv.ToString());
+        ShowToast($"Successfully exported {filteredExpenses.Count} transaction(s)!");
+    }
+
+    private string CleanCsvField(string field)
+    {
+        if (string.IsNullOrEmpty(field)) return "";
+        if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
+        {
+            return $"\"{field.Replace("\"", "\"\"")}\"";
+        }
+        return field;
     }
 }
