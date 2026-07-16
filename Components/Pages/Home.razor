@@ -45,49 +45,73 @@
         <!-- Top KPI Cards Row -->
         <div class="row g-4 mb-5">
             <!-- Total Spent Card -->
-            <div class="col-12 col-md-4">
-                <div class="glass-card d-flex align-items-center justify-content-between">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card kpi-card-blue">
                     <div>
-                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Total Spent This Month</span>
-                        <h2 class="mb-0 text-white font-weight-extrabold">$@totalMonthSpent.ToString("N2")</h2>
-                        <span class="text-secondary" style="font-size: 0.85rem;">from @expensesCount transactions</span>
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Spent (Month)</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold" style="font-size: 1.5rem;">$@totalMonthSpent.ToString("N2")</h2>
+                        <span class="text-secondary" style="font-size: 0.78rem;">from @expensesCount transactions</span>
                     </div>
-                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 1.5rem;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" style="width: 48px; height: 48px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 1.35rem;">
                         💳
                     </div>
                 </div>
             </div>
 
-            <!-- Active Budgets Card -->
-            <div class="col-12 col-md-4">
-                <div class="glass-card d-flex align-items-center justify-content-between">
+            <!-- Remaining Budget Card -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card @(remainingBudget >= 0 ? "kpi-card-green" : "kpi-card-blue")" style="@(remainingBudget < 0 ? "border-bottom: 3px solid #ef4444 !important;" : "")">
                     <div>
-                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Budget Status</span>
-                        <h2 class="mb-0 text-white font-weight-extrabold">@exceededBudgetsCount / @totalBudgetsCount</h2>
-                        <span class="@(exceededBudgetsCount > 0 ? "text-danger" : "text-success")" style="font-size: 0.85rem;">
-                            @(exceededBudgetsCount > 0 ? $"{exceededBudgetsCount} budget(s) exceeded" : "All budgets within limit")
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Remaining Budget</span>
+                        <h2 class="mb-0 font-weight-extrabold @(remainingBudget >= 0 ? "text-success" : "text-danger")" style="font-size: 1.5rem;">
+                            @if (remainingBudget >= 0)
+                            {
+                                <span>$@remainingBudget.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span>-$@Math.Abs(remainingBudget).ToString("N2")</span>
+                            }
+                        </h2>
+                        <span class="text-secondary" style="font-size: 0.78rem;">
+                            @(totalBudgetLimit > 0 ? $"of $@totalBudgetLimit.ToString("N0") limit" : "No active budgets")
                         </span>
                     </div>
-                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: @(exceededBudgetsCount > 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)"); color: @(exceededBudgetsCount > 0 ? "#f87171" : "#34d399"); font-size: 1.5rem;">
-                        🎯
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" 
+                         style="width: 48px; height: 48px; background: @(remainingBudget >= 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)"); color: @(remainingBudget >= 0 ? "#34d399" : "#f87171"); font-size: 1.35rem;">
+                        💰
                     </div>
                 </div>
             </div>
 
             <!-- Top Expense Category Card -->
-            <div class="col-12 col-md-4">
-                <div class="glass-card d-flex align-items-center justify-content-between">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card kpi-card-purple">
                     <div>
-                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">Highest Spending Sector</span>
-                        <h2 class="mb-0 text-white font-weight-extrabold">
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Highest Spend Category</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold" style="font-size: 1.4rem; letter-spacing: -0.02em;">
                             @(!string.IsNullOrEmpty(topCategoryName) ? topCategoryName : "None")
                         </h2>
-                        <span class="text-secondary" style="font-size: 0.85rem;">
-                            @(!string.IsNullOrEmpty(topCategoryName) ? $"${topCategoryAmount.ToString("N2")} spent" : "$0.00 spent")
+                        <span class="text-secondary" style="font-size: 0.78rem;">
+                            @(!string.IsNullOrEmpty(topCategoryName) ? $"${topCategoryAmount.ToString("N0")} spent" : "$0.00 spent")
                         </span>
                     </div>
-                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 1.5rem;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" style="width: 48px; height: 48px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 1.35rem;">
                         📈
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Average Spend Card -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card kpi-card-amber">
+                    <div>
+                        <span class="text-secondary font-weight-bold text-uppercase d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Daily Average Spend</span>
+                        <h2 class="mb-0 text-white font-weight-extrabold" style="font-size: 1.5rem;">$@dailyAverageSpend.ToString("N2")</h2>
+                        <span class="text-secondary" style="font-size: 0.78rem;">burn rate this month</span>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-size: 1.35rem;">
+                        📅
                     </div>
                 </div>
             </div>
@@ -217,6 +241,11 @@
     private int exceededBudgetsCount = 0;
     private string topCategoryName = "";
     private decimal topCategoryAmount = 0;
+    
+    // New KPI metrics
+    private decimal totalBudgetLimit = 0;
+    private decimal remainingBudget = 0;
+    private decimal dailyAverageSpend = 0;
 
     private List<Expense> recentExpenses = new();
     private List<BudgetProgress> categoriesWithBudgets = new();
@@ -241,6 +270,11 @@
             var categories = await CategoryService.GetCategoriesAsync();
             var budgets = categories.Where(c => c.Budget != null).Select(c => c.Budget!).ToList();
             totalBudgetsCount = budgets.Count;
+            totalBudgetLimit = budgets.Sum(b => b.Amount);
+            remainingBudget = totalBudgetLimit - totalMonthSpent;
+
+            var elapsedDays = DateTime.Today.Day;
+            dailyAverageSpend = elapsedDays > 0 ? totalMonthSpent / elapsedDays : 0;
 
             // Calculate budget progress
             categoriesWithBudgets.Clear();
