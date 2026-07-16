@@ -57,8 +57,18 @@
                 <input type="date" class="form-control" @bind="filterEndDate" @bind:after="ApplyFilters" />
             </div>
         </div>
-        <div class="d-flex justify-content-end mt-3 gap-2">
-            <button class="btn btn-secondary-custom btn-sm py-1 px-3" @onclick="ResetFilters">Reset Filters</button>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <!-- Preset Buttons -->
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-month" ? "active" : "")" @onclick='() => SetDatePreset("this-month")'>This Month</button>
+                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "last-30" ? "active" : "")" @onclick='() => SetDatePreset("last-30")'>Last 30 Days</button>
+                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "this-year" ? "active" : "")" @onclick='() => SetDatePreset("this-year")'>This Year</button>
+                <button type="button" class="btn btn-action btn-sm py-1 px-3 @(activePreset == "all" ? "active" : "")" @onclick='() => SetDatePreset("all")'>All Time</button>
+            </div>
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+                <button class="btn btn-secondary-custom btn-sm py-1 px-3" @onclick="ResetFilters">Reset Filters</button>
+            </div>
         </div>
     </div>
 
@@ -235,6 +245,7 @@
     private int filterCategoryId = 0;
     private DateTime? filterStartDate;
     private DateTime? filterEndDate;
+    private string activePreset = "all";
 
     // Editing State
     private Expense editingExpense = new();
@@ -320,6 +331,36 @@
         filterCategoryId = 0;
         filterStartDate = null;
         filterEndDate = null;
+        activePreset = "all";
+        ApplyFilters();
+    }
+
+    private void SetDatePreset(string preset)
+    {
+        activePreset = preset;
+        var today = DateTime.Today;
+        
+        switch (preset)
+        {
+            case "this-month":
+                filterStartDate = new DateTime(today.Year, today.Month, 1);
+                filterEndDate = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+                break;
+            case "last-30":
+                filterStartDate = today.AddDays(-30);
+                filterEndDate = today;
+                break;
+            case "this-year":
+                filterStartDate = new DateTime(today.Year, 1, 1);
+                filterEndDate = new DateTime(today.Year, 12, 31);
+                break;
+            case "all":
+            default:
+                filterStartDate = null;
+                filterEndDate = null;
+                break;
+        }
+        
         ApplyFilters();
     }
 
