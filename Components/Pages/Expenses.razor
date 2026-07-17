@@ -3,6 +3,7 @@
 @using C__Project.Services
 @inject ExpenseService ExpenseService
 @inject CategoryService CategoryService
+@inject ExpenseClassifierService Classifier
 @inject IJSRuntime JS
 
 <PageTitle>WealthFlow — Expenses</PageTitle>
@@ -217,8 +218,18 @@
                     <!-- Description -->
                     <div>
                         <label class="form-label">Description</label>
-                        <InputText @bind-Value="editingExpense.Description" class="form-control" placeholder="e.g. Weekly Groceries" />
+                        <InputText @bind-Value="editingExpense.Description" class="form-control" placeholder="e.g. Weekly Groceries" @oninput="OnDescriptionInput" />
                         <ValidationMessage For="() => editingExpense.Description" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                        
+                        @if (suggestedCategoryId.HasValue && suggestedCategoryId.Value > 0)
+                        {
+                            <div class="mt-2 p-2 rounded-3 d-flex align-items-center justify-content-between fade-in" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);">
+                                <span class="text-secondary" style="font-size: 0.8rem;">
+                                    💡 Suggested Category: <strong class="text-white">@suggestedCategoryIconName</strong> <span class="text-success font-weight-bold">(@suggestedConfidence.ToString("F0")% match)</span>
+                                </span>
+                                <button type="button" class="btn btn-primary-custom btn-sm py-0 px-2" style="font-size: 0.72rem; height: 22px;" @onclick="ApplySuggestion">Apply</button>
+                            </div>
+                        }
                     </div>
 
                     <div class="row g-3">
@@ -319,6 +330,11 @@
 
     // Editing State
     private Expense editingExpense = new();
+
+    // ML Suggestion State
+    private int? suggestedCategoryId;
+    private string suggestedCategoryIconName = "";
+    private double suggestedConfidence = 0.0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -449,6 +465,7 @@
 
     private void OpenAddModal()
     {
+        suggestedCategoryId = null;
         editingExpense = new Expense 
         { 
             Date = DateTime.Today,
@@ -460,6 +477,7 @@
 
     private void OpenEditModal(Expense expense)
     {
+        suggestedCategoryId = null;
         editingExpense = new Expense
         {
             Id = expense.Id,
@@ -475,7 +493,48 @@
 
     private void CloseModal()
     {
+        suggestedCategoryId = null;
         isModalOpen = false;
+    }
+
+    private async Task OnDescriptionInput(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString() ?? "";
+        editingExpense.Description = text;
+        
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 3)
+        {
+            suggestedCategoryId = null;
+            return;
+        }
+
+        var result = await Classifier.PredictCategoryAsync(text);
+        if (result != null && result.Confidence >= 40.0)
+        {
+            var category = categories.FirstOrDefault(c => c.Id == result.CategoryId);
+            if (category != null)
+            {
+                // Suggest only if different from current selection
+                if (editingExpense.CategoryId != category.Id)
+                {
+                    suggestedCategoryId = category.Id;
+                    suggestedCategoryIconName = $"{category.Icon} {category.Name}";
+                    suggestedConfidence = result.Confidence;
+                    return;
+                }
+            }
+        }
+        suggestedCategoryId = null;
+    }
+
+    private void ApplySuggestion()
+    {
+        if (suggestedCategoryId.HasValue)
+        {
+            editingExpense.CategoryId = suggestedCategoryId.Value;
+            suggestedCategoryId = null;
+            ShowToast("Category suggestion applied!");
+        }
     }
 
     private async Task SaveExpense()

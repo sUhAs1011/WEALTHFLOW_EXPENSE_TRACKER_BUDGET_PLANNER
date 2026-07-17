@@ -17,6 +17,7 @@ builder.Services.AddDbContext<ExpenseTrackerDbContext>(options =>
 // Register Services
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ExpenseService>();
+builder.Services.AddScoped<ExpenseClassifierService>();
 
 var app = builder.Build();
 
