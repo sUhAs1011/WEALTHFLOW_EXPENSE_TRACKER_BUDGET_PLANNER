@@ -8,6 +8,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 
 ## 🚀 Key Features
 
+* **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
 * **📊 Glowing "Quick Stats" KPI Row**: Four dynamic dashboard cards displaying **Total Monthly Spend**, **Remaining Budget balance** (turns red if over limit), **Highest Spending Sector**, and **Daily Average Burn Rate** with neon hover glows.
 * **🔁 Recurring Subscriptions Tracker**: Toggle transactions as subscriptions (Netflix, Spotify, Rent). The Expenses panel features a dedicated sidebar showing total monthly committed drain, auto-billing dates, and transaction ledger badges.
 * **📥 CSV Export Button**: Download your transaction logs as Excel-compatible `.csv` files. Filtering records dynamically exports only the currently searched subset, complete with a custom filename prompt.
@@ -22,6 +23,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 ## 🛠️ Technology Stack
 
 * **Core Framework**: .NET 10.0 (ASP.NET Core Blazor Web App)
+* **Machine Learning**: Custom Pure C# Naive Bayes Text Classifier (Zero external dependencies or Python runtimes required)
 * **ORM (Database Access)**: Entity Framework Core 10.0
 * **Database**: SQLite (Zero-configuration file-based DB, auto-generated on launch)
 * **Styling**: Vanilla CSS (Fluid glassmorphism, responsive grids, CSS variables, and keyframe animations)
@@ -41,7 +43,7 @@ C#_Project/
 │   │   └── NavMenu.razor       # Top Horizontal Header Navigation
 │   ├── Pages/
 │   │   ├── Home.razor          # Main Dashboard & Budget Progress
-│   │   ├── Expenses.razor      # Transaction CRUD & Subscriptions Tracker
+│   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions & Subscriptions Tracker
 │   │   ├── Budgets.razor       # Set limits & category creator
 │   │   └── Analytics.razor     # SVG breakdown visualization
 │   └── App.razor               # Blazor Entry, JS download helpers
@@ -54,9 +56,10 @@ C#_Project/
 │   ├── Expense.cs              # Date, description, notes, and IsRecurring flag
 │   └── Budget.cs               # Limit amount configuration
 │
-├── Services/                   # Database Queries & Logic
+├── Services/                   # Database Queries & ML Logic
 │   ├── CategoryService.cs
-│   └── ExpenseService.cs
+│   ├── ExpenseService.cs
+│   └── ExpenseClassifierService.cs # Pure C# Naive Bayes Text Classifier
 │
 └── wwwroot/                    # Web Assets
     ├── app.css                 # Custom glassmorphic styles & animations
@@ -73,7 +76,7 @@ Ensure you have the **.NET SDK (10.0 or later)** installed.
 ### Run Instructions (Windows AppLocker / Application Control)
 If your environment has strict Application Control policies blocking executable binary execution inside the `Downloads` directory, compile and run the assembly DLL directly from a trusted directory (like `C:\Users\suhas\C#_Project`):
 
-1. **Delete Existing SQLite DB** (required to initialize the new `IsRecurring` schema column):
+1. **Delete Existing SQLite DB** (required to initialize schema columns & seed ML data):
    ```cmd
    del wealthflow.db
    ```
