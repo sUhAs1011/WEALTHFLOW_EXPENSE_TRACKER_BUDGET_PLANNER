@@ -2,13 +2,14 @@
 @using C__Project.Models
 @using C__Project.Services
 @inject ExpenseService ExpenseService
+@inject SpendForecasterService Forecaster
 
-<PageTitle>WealthFlow — Analytics</PageTitle>
+<PageTitle>WealthFlow — Analytics & AI Forecast</PageTitle>
 
 <div class="fade-in">
     <div class="mb-4">
-        <h1 class="mb-1 text-white">Analytics</h1>
-        <p class="text-secondary">Visual analysis of your category spending distribution</p>
+        <h1 class="mb-1 text-white">Analytics & AI Forecasting</h1>
+        <p class="text-secondary">Visual analysis of spending distribution and 30-day linear regression trends</p>
     </div>
 
     @if (isLoading)
@@ -24,12 +25,12 @@
         <div class="glass-card text-center py-5">
             <div class="mb-3" style="font-size: 3rem;">📊</div>
             <h4 class="text-white">No expenses recorded for this month</h4>
-            <p class="text-secondary">Please add transaction details to visualize analytics.</p>
+            <p class="text-secondary">Please add transaction details to visualize analytics and forecasts.</p>
         </div>
     }
     else
     {
-        <div class="row g-4">
+        <div class="row g-4 mb-4">
             <!-- Left Side: SVG Donut Chart -->
             <div class="col-12 col-md-5">
                 <div class="glass-card text-center d-flex flex-column align-items-center justify-content-center h-100">
@@ -117,6 +118,142 @@
                 </div>
             </div>
         </div>
+
+        <!-- AI Spending Trend & 30-Day Forecast Section -->
+        @if (forecastResult != null)
+        {
+            <div class="glass-card mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+                    <div>
+                        <h3 class="mb-1 text-white d-flex align-items-center gap-2">
+                            <span>📈</span> AI Spending Trend & 30-Day Forecast
+                        </h3>
+                        <p class="text-secondary mb-0" style="font-size: 0.88rem;">
+                            Predictive trajectory generated using Ordinary Least Squares (OLS) Linear Regression ($y = mx + c$).
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" style="background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.78rem; padding: 6px 12px;">
+                            🤖 OLS Model Confidence: <strong>@forecastResult.ConfidenceLevel</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Forecast Metrics Grid -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">PROJECTED 30-DAY SPEND</span>
+                            <h4 class="mb-0 text-white font-weight-extrabold mt-1" style="font-size: 1.4rem;">
+                                $@forecastResult.ProjectedNextMonthTotal.ToString("N2")
+                            </h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">estimated total</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">DAILY BURN RATE</span>
+                            <h4 class="mb-0 text-amber font-weight-extrabold mt-1" style="font-size: 1.4rem; color: #fbbf24;">
+                                $@forecastResult.DailyBurnRate.ToString("N2")<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">/day</span>
+                            </h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">projected pace</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">EXPECTED TRAJECTORY</span>
+                            <h4 class="mb-0 font-weight-extrabold mt-1 @(forecastResult.TrendPercentage >= 0 ? "text-danger" : "text-success")" style="font-size: 1.4rem;">
+                                @(forecastResult.TrendPercentage >= 0 ? "+" : "")@forecastResult.TrendPercentage.ToString("F1")%
+                            </h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">
+                                @(forecastResult.TrendPercentage >= 0 ? "projected rise" : "projected savings")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">PRIMARY DRIVER</span>
+                            <h4 class="mb-0 text-white font-weight-extrabold mt-1" style="font-size: 1.25rem;">
+                                @forecastResult.TopGrowthCategoryIcon @forecastResult.TopGrowthCategoryName
+                            </h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">highest volume sector</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SVG Interactive Line Graph (Actual vs Projected Line) -->
+                @{
+                    var maxVal = (double)Math.Max(forecastResult.ProjectedNextMonthTotal, forecastResult.CurrentMonthSpend);
+                    if (maxVal <= 0) maxVal = 1000;
+
+                    int svgWidth = 700;
+                    int svgHeight = 220;
+                    int paddingX = 40;
+                    int paddingY = 20;
+                    double chartW = svgWidth - 2 * paddingX;
+                    double chartH = svgHeight - 2 * paddingY;
+
+                    // Build path data for Actual (Solid Cyan) vs Projected (Dashed Amber)
+                    var pointsList = forecastResult.DailyPoints;
+                    int count = pointsList.Count;
+
+                    var actualPointsStr = new System.Text.StringBuilder();
+                    var projectedPointsStr = new System.Text.StringBuilder();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        var pt = pointsList[i];
+                        double x = paddingX + (i / (double)(count - 1)) * chartW;
+                        
+                        double yActual = (paddingY + chartH) - ((double)pt.ActualCumulative / maxVal) * chartH;
+                        double yProjected = (paddingY + chartH) - ((double)pt.ProjectedCumulative / maxVal) * chartH;
+
+                        if (i == 0)
+                        {
+                            actualPointsStr.Append($"M {x.ToString("F1")} {yActual.ToString("F1")}");
+                            projectedPointsStr.Append($"M {x.ToString("F1")} {yProjected.ToString("F1")}");
+                        }
+                        else
+                        {
+                            if (!pt.IsProjection)
+                            {
+                                actualPointsStr.Append($" L {x.ToString("F1")} {yActual.ToString("F1")}");
+                            }
+                            projectedPointsStr.Append($" L {x.ToString("F1")} {yProjected.ToString("F1")}");
+                        }
+                    }
+                }
+
+                <div class="p-3 rounded-3 mt-2" style="background: rgba(10, 14, 26, 0.6); border: 1px solid var(--border-light);">
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-2" style="font-size: 0.8rem;">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="d-flex align-items-center gap-1 text-white">
+                                <span style="display: inline-block; width: 16px; height: 3px; background-color: #818cf8;"></span> Actual Daily Spend
+                            </span>
+                            <span class="d-flex align-items-center gap-1 text-warning">
+                                <span style="display: inline-block; width: 16px; height: 3px; background-color: #fbbf24; border-top: 2px dashed #fbbf24;"></span> 30-Day Trend Projection
+                            </span>
+                        </div>
+                        <span class="text-secondary">Day 1 ➔ Day 30</span>
+                    </div>
+
+                    <div style="width: 100%; overflow-x: auto;">
+                        <svg width="100%" height="220" viewBox="0 0 700 220" preserveAspectRatio="none" style="overflow: visible;">
+                            <!-- Horizontal Grid Lines -->
+                            <line x1="40" y1="20" x2="660" y2="20" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                            <line x1="40" y1="120" x2="660" y2="120" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                            <line x1="40" y1="200" x2="660" y2="200" stroke="rgba(255,255,255,0.1)" stroke-width="1" />
+
+                            <!-- Projected Trend Line (Dashed Amber/Yellow) -->
+                            <path d="@projectedPointsStr.ToString()" fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="6,4" style="filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));" />
+
+                            <!-- Actual Spend Line (Solid Glowing Cyan) -->
+                            <path d="@actualPointsStr.ToString()" fill="none" stroke="#818cf8" stroke-width="3.5" style="filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.5));" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -124,6 +261,7 @@
     private bool isLoading = true;
     private decimal totalSpend = 0;
     private List<CategorySpend> categorySpends = new();
+    private SpendForecasterService.ForecastResult? forecastResult;
     
     // SVG Donut Math Properties
     private const double Radius = 70;
@@ -147,6 +285,9 @@
             
             // Fetch categorized spending breakdowns
             categorySpends = await ExpenseService.GetExpensesByCategoryForMonthAsync(year, month);
+
+            // Fetch AI OLS Linear Regression Forecast
+            forecastResult = await Forecaster.GenerateForecastAsync();
         }
         catch (Exception ex)
         {
