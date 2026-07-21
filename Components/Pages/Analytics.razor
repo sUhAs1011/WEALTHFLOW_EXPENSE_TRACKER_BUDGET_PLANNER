@@ -9,7 +9,7 @@
 <div class="fade-in">
     <div class="mb-4">
         <h1 class="mb-1 text-white">Analytics & AI Forecasting</h1>
-        <p class="text-secondary">Visual analysis of spending distribution and 30-day linear regression trends</p>
+        <p class="text-secondary">Visual analysis of spending distribution and multi-horizon linear regression trends</p>
     </div>
 
     @if (isLoading)
@@ -119,23 +119,33 @@
             </div>
         </div>
 
-        <!-- AI Spending Trend & 30-Day Forecast Section -->
+        <!-- AI Spending Trend & Horizon Forecast Section -->
         @if (forecastResult != null)
         {
             <div class="glass-card mb-4">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
                     <div>
                         <h3 class="mb-1 text-white d-flex align-items-center gap-2">
-                            <span>📈</span> AI Spending Trend & 30-Day Forecast
+                            <span>📈</span> AI Spending Trend & @selectedForecastDays-Day Forecast
                         </h3>
                         <p class="text-secondary mb-0" style="font-size: 0.88rem;">
                             Predictive trajectory generated using Ordinary Least Squares (OLS) Linear Regression ($y = mx + c$).
                         </p>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    
+                    <!-- Horizon Selector Controls -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="badge" style="background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.78rem; padding: 6px 12px;">
                             🤖 OLS Model Confidence: <strong>@forecastResult.ConfidenceLevel</strong>
                         </span>
+                        
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Forecast Horizon Selector">
+                            <button type="button" class="btn btn-action btn-sm @(selectedForecastDays == 7 ? "active" : "")" @onclick="() => ChangeForecastHorizon(7)">7D</button>
+                            <button type="button" class="btn btn-action btn-sm @(selectedForecastDays == 14 ? "active" : "")" @onclick="() => ChangeForecastHorizon(14)">14D</button>
+                            <button type="button" class="btn btn-action btn-sm @(selectedForecastDays == 30 ? "active" : "")" @onclick="() => ChangeForecastHorizon(30)">30D</button>
+                            <button type="button" class="btn btn-action btn-sm @(selectedForecastDays == 60 ? "active" : "")" @onclick="() => ChangeForecastHorizon(60)">60D</button>
+                            <button type="button" class="btn btn-action btn-sm @(selectedForecastDays == 90 ? "active" : "")" @onclick="() => ChangeForecastHorizon(90)">90D</button>
+                        </div>
                     </div>
                 </div>
 
@@ -143,7 +153,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
-                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">PROJECTED 30-DAY SPEND</span>
+                            <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">PROJECTED @selectedForecastDays-DAY SPEND</span>
                             <h4 class="mb-0 text-white font-weight-extrabold mt-1" style="font-size: 1.4rem;">
                                 $@forecastResult.ProjectedNextMonthTotal.ToString("N2")
                             </h4>
@@ -231,10 +241,10 @@
                                 <span style="display: inline-block; width: 16px; height: 3px; background-color: #818cf8;"></span> Actual Daily Spend
                             </span>
                             <span class="d-flex align-items-center gap-1 text-warning">
-                                <span style="display: inline-block; width: 16px; height: 3px; background-color: #fbbf24; border-top: 2px dashed #fbbf24;"></span> 30-Day Trend Projection
+                                <span style="display: inline-block; width: 16px; height: 3px; background-color: #fbbf24; border-top: 2px dashed #fbbf24;"></span> @selectedForecastDays-Day Trend Projection
                             </span>
                         </div>
-                        <span class="text-secondary">Day 1 ➔ Day 30</span>
+                        <span class="text-secondary">Day 1 ➔ Day @selectedForecastDays</span>
                     </div>
 
                     <div style="width: 100%; overflow-x: auto;">
@@ -260,6 +270,7 @@
 @code {
     private bool isLoading = true;
     private decimal totalSpend = 0;
+    private int selectedForecastDays = 30;
     private List<CategorySpend> categorySpends = new();
     private SpendForecasterService.ForecastResult? forecastResult;
     
@@ -286,8 +297,8 @@
             // Fetch categorized spending breakdowns
             categorySpends = await ExpenseService.GetExpensesByCategoryForMonthAsync(year, month);
 
-            // Fetch AI OLS Linear Regression Forecast
-            forecastResult = await Forecaster.GenerateForecastAsync();
+            // Fetch AI OLS Linear Regression Forecast for selected horizon
+            forecastResult = await Forecaster.GenerateForecastAsync(selectedForecastDays);
         }
         catch (Exception ex)
         {
@@ -297,5 +308,11 @@
         {
             isLoading = false;
         }
+    }
+
+    private async Task ChangeForecastHorizon(int days)
+    {
+        selectedForecastDays = days;
+        forecastResult = await Forecaster.GenerateForecastAsync(selectedForecastDays);
     }
 }

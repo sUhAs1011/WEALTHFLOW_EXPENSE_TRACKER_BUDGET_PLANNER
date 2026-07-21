@@ -19,6 +19,7 @@ public class SpendForecasterService
         public decimal ProjectedNextMonthTotal { get; set; }
         public decimal DailyBurnRate { get; set; }
         public double TrendPercentage { get; set; }
+        public int TargetDays { get; set; } = 30;
         public string ConfidenceLevel { get; set; } = "Medium";
         public string TopGrowthCategoryName { get; set; } = "";
         public string TopGrowthCategoryIcon { get; set; } = "📈";
@@ -33,12 +34,13 @@ public class SpendForecasterService
         public bool IsProjection { get; set; }
     }
 
-    public async Task<ForecastResult> GenerateForecastAsync()
+    public async Task<ForecastResult> GenerateForecastAsync(int targetDays = 30)
     {
+        if (targetDays < 1) targetDays = 30;
+
         var today = DateTime.Today;
         var startOfMonth = new DateTime(today.Year, today.Month, 1);
         var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
-        int daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
 
         // Query current month expenses
         var currentExpenses = await _context.Expenses
@@ -107,9 +109,9 @@ public class SpendForecasterService
             rSquared = 0.5;
         }
 
-        // Calculate projections
+        // Calculate projections for N target days
         decimal dailyBurnRate = (decimal)Math.Max(m, (double)currentMonthSpend / elapsedDays);
-        decimal projectedNextMonthTotal = dailyBurnRate * 30;
+        decimal projectedNextMonthTotal = dailyBurnRate * targetDays;
 
         double trendPercentage = currentMonthSpend > 0 
             ? ((double)(projectedNextMonthTotal - currentMonthSpend) / (double)currentMonthSpend) * 100 
@@ -127,11 +129,11 @@ public class SpendForecasterService
         string topCatName = categoryTotals?.Key?.Name ?? "General";
         string topCatIcon = categoryTotals?.Key?.Icon ?? "📈";
 
-        // Build 30-day graph data points (Day 1..15 actual, Day 16..30 projected)
+        // Build N-day graph data points
         var points = new List<DailyDataPoint>();
         double runningActual = 0.0;
 
-        for (int day = 1; day <= 30; day++)
+        for (int day = 1; day <= targetDays; day++)
         {
             bool isProjection = day > elapsedDays;
             if (day <= elapsedDays && dailyActualMap.TryGetValue(day, out var amt))
@@ -148,7 +150,7 @@ public class SpendForecasterService
             points.Add(new DailyDataPoint
             {
                 Day = day,
-                ActualCumulative = isProjection ? (decimal)runningActual : (decimal)runningActual,
+                ActualCumulative = (decimal)runningActual,
                 ProjectedCumulative = (decimal)Math.Max(projectedVal, 0),
                 IsProjection = isProjection
             });
@@ -160,6 +162,7 @@ public class SpendForecasterService
             ProjectedNextMonthTotal = projectedNextMonthTotal,
             DailyBurnRate = dailyBurnRate,
             TrendPercentage = trendPercentage,
+            TargetDays = targetDays,
             ConfidenceLevel = confidenceLevel,
             TopGrowthCategoryName = topCatName,
             TopGrowthCategoryIcon = topCatIcon,

@@ -9,7 +9,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 ## 🚀 Key Features
 
 * **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
-* **📈 AI Spending Trend & 30-Day Forecaster**: Analyzes historical transaction trajectories using an **Ordinary Least Squares (OLS) Linear Regression** algorithm ($y = mx + c$). Generates projected 30-day totals, daily burn rate paces, and renders an interactive SVG chart featuring a solid actual line and a dashed projected trend line.
+* **📈 AI Spending Trend & Multi-Horizon Forecaster**: Analyzes historical transaction trajectories using an **Ordinary Least Squares (OLS) Linear Regression** algorithm ($y = mx + c$). Generates projected totals and daily burn rate paces across customizable time horizons (**7D**, **14D**, **30D**, **60D**, **90D**), scaling an interactive SVG graph with solid actual and dashed projected trend lines.
 * **📊 Glowing "Quick Stats" KPI Row**: Four dynamic dashboard cards displaying **Total Monthly Spend**, **Remaining Budget balance** (turns red if over limit), **Highest Spending Sector**, and **Daily Average Burn Rate** with neon hover glows.
 * **🔁 Recurring Subscriptions Tracker**: Toggle transactions as subscriptions (Netflix, Spotify, Rent). The Expenses panel features a dedicated sidebar showing total monthly committed drain, auto-billing dates, and transaction ledger badges.
 * **📥 CSV Export Button**: Download your transaction logs as Excel-compatible `.csv` files. Filtering records dynamically exports only the currently searched subset, complete with a custom filename prompt.
@@ -26,7 +26,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 * **Core Framework**: .NET 10.0 (ASP.NET Core Blazor Web App)
 * **Machine Learning & AI**: 
   - Pure C# Naive Bayes Text Classifier for auto-suggestions
-  - Pure C# Ordinary Least Squares (OLS) Linear Regression for 30-day spend forecasting
+  - Pure C# Ordinary Least Squares (OLS) Linear Regression for dynamic N-day spend forecasting (7D to 90D)
   - Zero external packages or Python runtimes required
 * **ORM (Database Access)**: Entity Framework Core 10.0
 * **Database**: SQLite (Zero-configuration file-based DB, auto-generated on launch)
@@ -49,7 +49,7 @@ C#_Project/
 │   │   ├── Home.razor          # Main Dashboard & Budget Progress
 │   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions & Subscriptions Tracker
 │   │   ├── Budgets.razor       # Set limits & category creator
-│   │   └── Analytics.razor     # SVG breakdown visualization & OLS AI Trend Chart
+│   │   └── Analytics.razor     # SVG breakdown visualization & OLS AI Multi-Horizon Trend Chart
 │   └── App.razor               # Blazor Entry, JS download helpers
 │
 ├── Data/                       # Persistence Context
@@ -64,7 +64,7 @@ C#_Project/
 │   ├── CategoryService.cs
 │   ├── ExpenseService.cs
 │   ├── ExpenseClassifierService.cs # Pure C# Naive Bayes Text Classifier
-│   └── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster
+│   └── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster (N-day horizons)
 │
 └── wwwroot/                    # Web Assets
     ├── app.css                 # Custom glassmorphic styles & animations
