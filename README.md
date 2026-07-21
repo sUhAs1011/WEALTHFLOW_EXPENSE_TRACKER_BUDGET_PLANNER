@@ -8,6 +8,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 
 ## 🚀 Key Features
 
+* **🤖 AI Financial Advisor & Strategy Engine**: Analyzes your linear regression forecasts, daily burn rates, and budget caps to generate **actionable savings recommendations**, budget breach alerts, sector concentration warnings, and a dynamic **Financial Health Score** (0–100).
 * **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
 * **📈 AI Spending Trend & Multi-Horizon Forecaster**: Analyzes historical transaction trajectories using an **Ordinary Least Squares (OLS) Linear Regression** algorithm ($y = mx + c$). Generates projected totals and daily burn rate paces across customizable time horizons (**7D**, **14D**, **30D**, **60D**, **90D**), scaling an interactive SVG graph with solid actual and dashed projected trend lines.
 * **📊 Glowing "Quick Stats" KPI Row**: Four dynamic dashboard cards displaying **Total Monthly Spend**, **Remaining Budget balance** (turns red if over limit), **Highest Spending Sector**, and **Daily Average Burn Rate** with neon hover glows.
@@ -27,6 +28,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 * **Machine Learning & AI**: 
   - Pure C# Naive Bayes Text Classifier for auto-suggestions
   - Pure C# Ordinary Least Squares (OLS) Linear Regression for dynamic N-day spend forecasting (7D to 90D)
+  - Pure C# Contextual Expert Advisory Engine for Financial Health Scoring & personalized budget advice
   - Zero external packages or Python runtimes required
 * **ORM (Database Access)**: Entity Framework Core 10.0
 * **Database**: SQLite (Zero-configuration file-based DB, auto-generated on launch)
@@ -49,7 +51,7 @@ C#_Project/
 │   │   ├── Home.razor          # Main Dashboard & Budget Progress
 │   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions & Subscriptions Tracker
 │   │   ├── Budgets.razor       # Set limits & category creator
-│   │   └── Analytics.razor     # SVG breakdown visualization & OLS AI Multi-Horizon Trend Chart
+│   │   └── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
 │   └── App.razor               # Blazor Entry, JS download helpers
 │
 ├── Data/                       # Persistence Context
@@ -64,7 +66,8 @@ C#_Project/
 │   ├── CategoryService.cs
 │   ├── ExpenseService.cs
 │   ├── ExpenseClassifierService.cs # Pure C# Naive Bayes Text Classifier
-│   └── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster (N-day horizons)
+│   ├── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster (N-day horizons)
+│   └── FinancialAdvisorService.cs  # Pure C# Financial Health Score & Advice Engine
 │
 └── wwwroot/                    # Web Assets
     ├── app.css                 # Custom glassmorphic styles & animations

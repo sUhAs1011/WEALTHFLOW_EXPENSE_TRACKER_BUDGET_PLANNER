@@ -3,13 +3,14 @@
 @using C__Project.Services
 @inject ExpenseService ExpenseService
 @inject SpendForecasterService Forecaster
+@inject FinancialAdvisorService Advisor
 
-<PageTitle>WealthFlow — Analytics & AI Forecast</PageTitle>
+<PageTitle>WealthFlow — Analytics & AI Advisor</PageTitle>
 
 <div class="fade-in">
     <div class="mb-4">
-        <h1 class="mb-1 text-white">Analytics & AI Forecasting</h1>
-        <p class="text-secondary">Visual analysis of spending distribution and multi-horizon linear regression trends</p>
+        <h1 class="mb-1 text-white">Analytics & AI Financial Advisor</h1>
+        <p class="text-secondary">Visual analysis of spending distribution, regression trends, and personalized budget advice</p>
     </div>
 
     @if (isLoading)
@@ -25,7 +26,7 @@
         <div class="glass-card text-center py-5">
             <div class="mb-3" style="font-size: 3rem;">📊</div>
             <h4 class="text-white">No expenses recorded for this month</h4>
-            <p class="text-secondary">Please add transaction details to visualize analytics and forecasts.</p>
+            <p class="text-secondary">Please add transaction details to visualize analytics and financial advice.</p>
         </div>
     }
     else
@@ -264,6 +265,58 @@
                 </div>
             </div>
         }
+
+        <!-- AI Financial Advisor & Budget Recommendations Section -->
+        @if (advisorReport != null)
+        {
+            <div class="glass-card mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+                    <div>
+                        <h3 class="mb-1 text-white d-flex align-items-center gap-2">
+                            <span>🤖</span> AI Financial Advisor & Budget Strategy
+                        </h3>
+                        <p class="text-secondary mb-0" style="font-size: 0.88rem;">
+                            Actionable spending recommendations and trajectory optimization generated from regression data.
+                        </p>
+                    </div>
+
+                    <!-- Health Score Badge -->
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-2 px-3 rounded-pill d-flex align-items-center gap-2" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light);">
+                            <span class="text-secondary" style="font-size: 0.8rem; font-weight: 600;">FINANCIAL HEALTH SCORE:</span>
+                            <span class="badge rounded-pill px-3 py-1 font-weight-extrabold" style="background-color: @(advisorReport.HealthBadgeColor + "20"); color: @advisorReport.HealthBadgeColor; border: 1px solid @(advisorReport.HealthBadgeColor + "40"); font-size: 0.9rem;">
+                                @advisorReport.HealthScore / 100 (@advisorReport.HealthLabel)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Cards List -->
+                <div class="row g-3">
+                    @foreach (var tip in advisorReport.Tips)
+                    {
+                        <div class="col-12 col-md-6">
+                            <div class="p-3.5 rounded-3 h-100 d-flex gap-3 align-items-start" style="background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border-light);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); font-size: 1.2rem;">
+                                    @tip.Icon
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-white font-weight-bold" style="font-size: 0.95rem;">@tip.Title</span>
+                                        <span class="badge" style="font-size: 0.68rem; background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border-light);">
+                                            @tip.Category
+                                        </span>
+                                    </div>
+                                    <p class="text-secondary mb-0" style="font-size: 0.84rem; line-height: 1.45;">
+                                        @tip.Message
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -273,6 +326,7 @@
     private int selectedForecastDays = 30;
     private List<CategorySpend> categorySpends = new();
     private SpendForecasterService.ForecastResult? forecastResult;
+    private FinancialAdvisorService.AdvisorReport? advisorReport;
     
     // SVG Donut Math Properties
     private const double Radius = 70;
@@ -299,6 +353,12 @@
 
             // Fetch AI OLS Linear Regression Forecast for selected horizon
             forecastResult = await Forecaster.GenerateForecastAsync(selectedForecastDays);
+
+            // Fetch AI Financial Advisor Recommendations Report
+            if (forecastResult != null)
+            {
+                advisorReport = await Advisor.GenerateAdvisorReportAsync(forecastResult);
+            }
         }
         catch (Exception ex)
         {
@@ -314,5 +374,9 @@
     {
         selectedForecastDays = days;
         forecastResult = await Forecaster.GenerateForecastAsync(selectedForecastDays);
+        if (forecastResult != null)
+        {
+            advisorReport = await Advisor.GenerateAdvisorReportAsync(forecastResult);
+        }
     }
 }
