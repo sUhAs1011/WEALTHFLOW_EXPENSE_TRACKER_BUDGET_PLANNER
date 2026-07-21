@@ -13,6 +13,7 @@ public class ExpenseTrackerDbContext : DbContext
     public DbSet<Category> Categories { get; set; } = null!;
     public DbSet<Expense> Expenses { get; set; } = null!;
     public DbSet<Budget> Budgets { get; set; } = null!;
+    public DbSet<SavingsGoal> SavingsGoals { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +63,13 @@ public class ExpenseTrackerDbContext : DbContext
             new Expense { Id = 5, Description = "Apartment Rent", Amount = 1200.00m, Date = currentMonthStart, CategoryId = 5, Notes = "Bank transfer to landlord", IsRecurring = true },
             new Expense { Id = 6, Description = "Sushi Dinner", Amount = 64.20m, Date = DateTime.Today.AddDays(-1), CategoryId = 1, Notes = "Date night at Sakura Sushi" },
             new Expense { Id = 7, Description = "Coffee & Bakery", Amount = 8.75m, Date = DateTime.Today, CategoryId = 1, Notes = "Starbucks morning break" }
+        );
+
+        // Seed Sample Savings Goals
+        modelBuilder.Entity<SavingsGoal>().HasData(
+            new SavingsGoal { Id = 1, Title = "Emergency Reserve Fund", TargetAmount = 5000.00m, CurrentAmount = 2400.00m, TargetDate = DateTime.Today.AddMonths(5), Icon = "🛡️", Color = "#2ecc71", Notes = "6 months liquid safety net" },
+            new SavingsGoal { Id = 2, Title = "Tech Workstation Upgrade", TargetAmount = 2000.00m, CurrentAmount = 850.00m, TargetDate = DateTime.Today.AddMonths(3), Icon = "💻", Color = "#33B5FF", Notes = "M3 MacBook Pro or PC build" },
+            new SavingsGoal { Id = 3, Title = "Summer Vacation", TargetAmount = 1500.00m, CurrentAmount = 300.00m, TargetDate = DateTime.Today.AddMonths(4), Icon = "🏖️", Color = "#F1C40F", Notes = "Flight & hotel booking" }
         );
     }
 }

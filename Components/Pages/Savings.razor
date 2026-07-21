@@ -1,0 +1,416 @@
+@page "/savings"
+@using C__Project.Models
+@using C__Project.Services
+@inject SavingsGoalService SavingsService
+@inject SpendForecasterService Forecaster
+
+<PageTitle>WealthFlow — Wealth Targets & Savings Goals</PageTitle>
+
+<div class="fade-in">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1 text-white d-flex align-items-center gap-2">
+                <span>🏆</span> Wealth Targets & Savings Goals
+            </h1>
+            <p class="text-secondary mb-0">Track gamified savings milestones, deposit funds, and view AI contribution recommendations</p>
+        </div>
+        <div>
+            <button class="btn btn-primary-custom px-4" @onclick="OpenAddModal">
+                <span class="me-1">+</span> Create Target Goal
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!savingsGoals.Any())
+    {
+        <div class="glass-card text-center py-5">
+            <div class="mb-3" style="font-size: 3.5rem;">🏆</div>
+            <h4 class="text-white">No Savings Targets Created Yet</h4>
+            <p class="text-secondary">Set up your first financial target (e.g. Emergency Reserve, Vacation, Tech Upgrade) to start tracking deposits!</p>
+            <button class="btn btn-primary-custom mt-2" @onclick="OpenAddModal">+ Create Target Goal</button>
+        </div>
+    }
+    else
+    {
+        <!-- Master Savings Overview Header Card -->
+        <div class="glass-card mb-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-12 col-md-4 text-center text-md-start">
+                    <span class="text-secondary text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 600;">TOTAL ACCUMULATED SAVINGS</span>
+                    <h2 class="mb-0 text-success font-weight-extrabold" style="font-size: 2.2rem; text-shadow: 0 0 15px rgba(46, 204, 113, 0.2);">
+                        $@totalSaved.ToString("N2")
+                    </h2>
+                    <span class="text-secondary" style="font-size: 0.82rem;">across @savingsGoals.Count active target goals</span>
+                </div>
+
+                <div class="col-12 col-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-secondary" style="font-size: 0.85rem; font-weight: 600;">Overall Progress</span>
+                        <span class="text-white font-weight-bold" style="font-size: 0.95rem;">@overallPercentage.ToString("F1")%</span>
+                    </div>
+                    <div class="progress-bar-wrapper" style="height: 14px;">
+                        <div class="progress-bar-fill progress-success" style="width: @(Math.Min(overallPercentage, 100))%;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mt-1" style="font-size: 0.75rem;">
+                        <span>Target Total: $@totalTarget.ToString("N0")</span>
+                        <span>Remaining Gap: $@((totalTarget - totalSaved).ToString("N0"))</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-3 text-center text-md-end">
+                    <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light);">
+                        <span class="text-secondary d-block" style="font-size: 0.75rem; font-weight: 600;">PROJECTED DAILY BURN RATE</span>
+                        <h4 class="mb-0 text-amber font-weight-extrabold mt-1" style="font-size: 1.3rem; color: #fbbf24;">
+                            $@dailyBurnRate.ToString("N2")<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-secondary);">/day</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Grid Cards -->
+        <div class="row g-4">
+            @foreach (var goal in savingsGoals)
+            {
+                var pct = goal.TargetAmount > 0 ? (double)(goal.CurrentAmount / goal.TargetAmount) * 100 : 0;
+                var recommendation = SavingsService.GetAIRecommendation(goal, dailyBurnRate);
+                var isCompleted = goal.CurrentAmount >= goal.TargetAmount;
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="glass-card h-100 d-flex flex-column justify-content-between position-relative">
+                        <div>
+                            <!-- Header & Actions -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                                         style="width: 44px; height: 44px; background-color: @(goal.Color + "20"); border: 1px solid @(goal.Color + "40"); font-size: 1.3rem;">
+                                        @goal.Icon
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0 text-white font-weight-bold" style="font-size: 1.05rem;">@goal.Title</h5>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">Target: @goal.TargetDate.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-action btn-edit py-0 px-2" style="font-size: 0.72rem; height: 24px;" @onclick="() => OpenEditModal(goal)">Edit</button>
+                                    <button class="btn btn-action btn-delete py-0 px-2" style="font-size: 0.72rem; height: 24px;" @onclick="() => DeleteGoal(goal.Id)">Delete</button>
+                                </div>
+                            </div>
+
+                            <!-- Circular Progress Ring Chart -->
+                            <div class="chart-container-donut my-4">
+                                <svg width="160" height="160" viewBox="0 0 160 160" style="transform: rotate(-90deg);">
+                                    <circle cx="80" cy="80" r="55" fill="transparent" stroke="rgba(255,255,255,0.03)" stroke-width="16" />
+                                    @{
+                                        var strokeLength = (Math.Min(pct, 100) / 100.0) * Circumference;
+                                        var strokeGap = Circumference - strokeLength;
+                                    }
+                                    <circle cx="80" cy="80" r="55" 
+                                            fill="transparent" 
+                                            stroke="@goal.Color" 
+                                            stroke-width="16" 
+                                            stroke-dasharray="@($"{strokeLength.ToString("F2")} {strokeGap.ToString("F2")}")" 
+                                            style="transform-origin: 80px 80px; transition: stroke-dasharray 0.5s ease-in-out; filter: drop-shadow(0 0 8px @(goal.Color + "60"));" />
+                                </svg>
+                                <div class="chart-center-text text-center">
+                                    <h3 class="mb-0 font-weight-extrabold" style="color: @goal.Color; font-size: 1.4rem;">@pct.ToString("F0")%</h3>
+                                    <span class="text-secondary d-block" style="font-size: 0.72rem;">$@goal.CurrentAmount.ToString("N0") / $@goal.TargetAmount.ToString("N0")</span>
+                                </div>
+                            </div>
+
+                            <!-- Target Countdown Badge -->
+                            <div class="mb-3 text-center">
+                                @if (isCompleted)
+                                {
+                                    <span class="badge px-3 py-1 font-weight-bold" style="background-color: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); font-size: 0.78rem;">
+                                        🎉 Target Goal Achieved!
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge px-3 py-1 text-secondary" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light); font-size: 0.75rem;">
+                                        ⏳ @recommendation.RemainingDays Days Remaining
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- AI Recommendation Tip Box -->
+                            <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border-light);">
+                                <p class="text-secondary mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                                    @recommendation.RecommendationMessage
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Deposit Button -->
+                        <div>
+                            <button class="btn btn-primary-custom w-100 py-2" @onclick="() => OpenDepositModal(goal)">
+                                💰 + Deposit Funds
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Deposit Funds Modal -->
+@if (isDepositModalOpen && depositTargetGoal != null)
+{
+    <div class="modal-backdrop-custom d-flex align-items-center justify-content-center">
+        <div class="modal-content-custom glass-card p-0" style="max-width: 420px;">
+            <div class="p-4 border-bottom border-secondary d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
+                <h4 class="mb-0 text-white font-weight-bold d-flex align-items-center gap-2">
+                    <span>@depositTargetGoal.Icon</span> Deposit to @depositTargetGoal.Title
+                </h4>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseDepositModal"></button>
+            </div>
+            
+            <div class="p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label text-secondary" style="font-size: 0.85rem; font-weight: 600;">Deposit Amount ($)</label>
+                    <input type="number" step="0.01" class="form-control bg-dark border-secondary text-white" @bind="depositAmount" placeholder="0.00" />
+                </div>
+
+                <!-- Quick Presets -->
+                <div>
+                    <label class="form-label text-secondary" style="font-size: 0.75rem; font-weight: 600;">Quick Presets</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3" @onclick="() => SetQuickDeposit(50)">+$50</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3" @onclick="() => SetQuickDeposit(100)">+$100</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3" @onclick="() => SetQuickDeposit(250)">+$250</button>
+                        <button type="button" class="btn btn-action btn-sm py-1 px-3" @onclick="() => SetQuickDeposit(500)">+$500</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-top border-secondary d-flex justify-content-end gap-2" style="background: rgba(255, 255, 255, 0.02);">
+                <button type="button" class="btn btn-secondary-custom" @onclick="CloseDepositModal">Cancel</button>
+                <button type="button" class="btn btn-primary-custom px-4" @onclick="ConfirmDeposit">Deposit Funds</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Create / Edit Savings Goal Modal -->
+@if (isGoalModalOpen)
+{
+    <div class="modal-backdrop-custom">
+        <div class="modal-content-custom glass-card p-0" style="max-width: 500px;">
+            <div class="p-4 border-bottom border-secondary d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
+                <h4 class="mb-0 text-white font-weight-bold">@(editingGoal.Id == 0 ? "Create Savings Target Goal" : "Edit Savings Target Goal")</h4>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseGoalModal"></button>
+            </div>
+            
+            <EditForm Model="editingGoal" OnValidSubmit="SaveGoal">
+                <DataAnnotationsValidator />
+                
+                <div class="p-4 d-flex flex-column gap-3">
+                    <!-- Title -->
+                    <div>
+                        <label class="form-label">Goal Title</label>
+                        <InputText @bind-Value="editingGoal.Title" class="form-control" placeholder="e.g. Emergency Reserve, Vacation" />
+                        <ValidationMessage For="() => editingGoal.Title" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Target Amount -->
+                        <div class="col-6">
+                            <label class="form-label">Target Amount ($)</label>
+                            <InputNumber @bind-Value="editingGoal.TargetAmount" class="form-control" placeholder="1000.00" />
+                            <ValidationMessage For="() => editingGoal.TargetAmount" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                        </div>
+                        
+                        <!-- Initial / Current Deposit -->
+                        <div class="col-6">
+                            <label class="form-label">Current Saved ($)</label>
+                            <InputNumber @bind-Value="editingGoal.CurrentAmount" class="form-control" placeholder="0.00" />
+                        </div>
+                    </div>
+
+                    <!-- Target Date -->
+                    <div>
+                        <label class="form-label">Target Date</label>
+                        <InputDate @bind-Value="editingGoal.TargetDate" class="form-control" />
+                        <ValidationMessage For="() => editingGoal.TargetDate" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Icon Selector -->
+                        <div class="col-6">
+                            <label class="form-label">Icon / Emoji</label>
+                            <InputSelect @bind-Value="editingGoal.Icon" class="form-select">
+                                <option value="🎯">🎯 Target</option>
+                                <option value="🛡️">🛡️ Shield / Safety</option>
+                                <option value="💻">💻 Tech / Workstation</option>
+                                <option value="🏖️">🏖️ Vacation / Travel</option>
+                                <option value="🏠">🏠 House / Real Estate</option>
+                                <option value="🚗">🚗 Vehicle / Car</option>
+                                <option value="🎁">🎁 Gift / Special</option>
+                            </InputSelect>
+                        </div>
+                        
+                        <!-- Color Selector -->
+                        <div class="col-6">
+                            <label class="form-label">Glow Color</label>
+                            <InputSelect @bind-Value="editingGoal.Color" class="form-select">
+                                <option value="#2ecc71">🟢 Emerald Green</option>
+                                <option value="#33B5FF">🔵 Sapphire Blue</option>
+                                <option value="#F1C40F">🟡 Amber Gold</option>
+                                <option value="#9B59B6">Purple Amethyst</option>
+                                <option value="#E91E63">Pink Neon</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="form-label">Notes (Optional)</label>
+                        <InputTextArea @bind-Value="editingGoal.Notes" class="form-control" rows="2" placeholder="Goal purpose or milestone details..." />
+                    </div>
+                </div>
+
+                <div class="p-4 border-top border-secondary d-flex justify-content-end gap-2" style="background: rgba(255, 255, 255, 0.02);">
+                    <button type="button" class="btn btn-secondary-custom" @onclick="CloseGoalModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom">Save Target</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private List<SavingsGoal> savingsGoals = new();
+    private decimal totalSaved = 0;
+    private decimal totalTarget = 0;
+    private double overallPercentage = 0;
+    private decimal dailyBurnRate = 0;
+
+    // Deposit Modal State
+    private bool isDepositModalOpen = false;
+    private SavingsGoal? depositTargetGoal;
+    private decimal depositAmount = 50;
+
+    // Goal Modal State
+    private bool isGoalModalOpen = false;
+    private SavingsGoal editingGoal = new();
+
+    // SVG Circular Ring Radius Math
+    private const double Radius = 55;
+    private const double Circumference = 2 * Math.PI * Radius; // ~345.57
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            savingsGoals = await SavingsService.GetSavingsGoalsAsync();
+            totalSaved = savingsGoals.Sum(g => g.CurrentAmount);
+            totalTarget = savingsGoals.Sum(g => g.TargetAmount);
+            overallPercentage = totalTarget > 0 ? (double)(totalSaved / totalTarget) * 100 : 0;
+
+            var forecast = await Forecaster.GenerateForecastAsync(30);
+            dailyBurnRate = forecast.DailyBurnRate;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading savings goals data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenAddModal()
+    {
+        editingGoal = new SavingsGoal
+        {
+            TargetDate = DateTime.Today.AddMonths(6)
+        };
+        isGoalModalOpen = true;
+    }
+
+    private void OpenEditModal(SavingsGoal goal)
+    {
+        editingGoal = new SavingsGoal
+        {
+            Id = goal.Id,
+            Title = goal.Title,
+            TargetAmount = goal.TargetAmount,
+            CurrentAmount = goal.CurrentAmount,
+            TargetDate = goal.TargetDate,
+            Icon = goal.Icon,
+            Color = goal.Color,
+            Notes = goal.Notes
+        };
+        isGoalModalOpen = true;
+    }
+
+    private void CloseGoalModal()
+    {
+        isGoalModalOpen = false;
+    }
+
+    private async Task SaveGoal()
+    {
+        bool result = await SavingsService.SaveSavingsGoalAsync(editingGoal);
+        if (result)
+        {
+            isGoalModalOpen = false;
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteGoal(int id)
+    {
+        bool result = await SavingsService.DeleteSavingsGoalAsync(id);
+        if (result)
+        {
+            await LoadData();
+        }
+    }
+
+    private void OpenDepositModal(SavingsGoal goal)
+    {
+        depositTargetGoal = goal;
+        depositAmount = 50;
+        isDepositModalOpen = true;
+    }
+
+    private void CloseDepositModal()
+    {
+        isDepositModalOpen = false;
+    }
+
+    private void SetQuickDeposit(decimal amount)
+    {
+        depositAmount = amount;
+    }
+
+    private async Task ConfirmDeposit()
+    {
+        if (depositTargetGoal != null && depositAmount > 0)
+        {
+            await SavingsService.DepositToGoalAsync(depositTargetGoal.Id, depositAmount);
+            isDepositModalOpen = false;
+            await LoadData();
+        }
+    }
+}

@@ -2,12 +2,13 @@
 
 A premium, modern, and highly interactive personal finance management dashboard built using **C# 10 / .NET 10.0**, **ASP.NET Core Blazor Web App (Interactive Server)**, and **Entity Framework Core with SQLite**.
 
-WealthFlow provides a beautiful dark-themed, glassmorphic interface to track expenses, manage budgets, analyze category breakdowns, and trace monthly financial commitments.
+WealthFlow provides a beautiful dark-themed, glassmorphic interface to track expenses, manage budgets, analyze category breakdowns, trace monthly financial commitments, and achieve gamified savings targets.
 
 ---
 
 ## 🚀 Key Features
 
+* **🏆 "Wealth Targets" Savings Goals Tracker (Gamified)**: Set, monitor, and deposit money into custom savings goals (*Emergency Reserve*, *Tech Upgrade*, *Vacation*). Features glowing SVG circular progress rings, target date countdown badges, quick deposit modals, and AI-driven deposit recommendations.
 * **🤖 AI Financial Advisor & Strategy Engine**: Analyzes your linear regression forecasts, daily burn rates, and budget caps to generate **actionable savings recommendations**, budget breach alerts, sector concentration warnings, and a dynamic **Financial Health Score** (0–100).
 * **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
 * **📈 AI Spending Trend & Multi-Horizon Forecaster**: Analyzes historical transaction trajectories using an **Ordinary Least Squares (OLS) Linear Regression** algorithm ($y = mx + c$). Generates projected totals and daily burn rate paces across customizable time horizons (**7D**, **14D**, **30D**, **60D**, **90D**), scaling an interactive SVG graph with solid actual and dashed projected trend lines.
@@ -29,6 +30,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
   - Pure C# Naive Bayes Text Classifier for auto-suggestions
   - Pure C# Ordinary Least Squares (OLS) Linear Regression for dynamic N-day spend forecasting (7D to 90D)
   - Pure C# Contextual Expert Advisory Engine for Financial Health Scoring & personalized budget advice
+  - Pure C# Savings Goal AI Deposit Pace Recommender
   - Zero external packages or Python runtimes required
 * **ORM (Database Access)**: Entity Framework Core 10.0
 * **Database**: SQLite (Zero-configuration file-based DB, auto-generated on launch)
@@ -51,7 +53,8 @@ C#_Project/
 │   │   ├── Home.razor          # Main Dashboard & Budget Progress
 │   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions & Subscriptions Tracker
 │   │   ├── Budgets.razor       # Set limits & category creator
-│   │   └── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
+│   │   ├── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
+│   │   └── Savings.razor       # Gamified Wealth Targets, SVG progress rings & Deposit Modals
 │   └── App.razor               # Blazor Entry, JS download helpers
 │
 ├── Data/                       # Persistence Context
@@ -60,14 +63,16 @@ C#_Project/
 ├── Models/                     # Core Domain Entities
 │   ├── Category.cs             # Emoji & color tags
 │   ├── Expense.cs              # Date, description, notes, and IsRecurring flag
-│   └── Budget.cs               # Limit amount configuration
+│   ├── Budget.cs               # Limit amount configuration
+│   └── SavingsGoal.cs          # Target amount, current saved, target date, color & icon
 │
 ├── Services/                   # Database Queries & ML Logic
 │   ├── CategoryService.cs
 │   ├── ExpenseService.cs
 │   ├── ExpenseClassifierService.cs # Pure C# Naive Bayes Text Classifier
 │   ├── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster (N-day horizons)
-│   └── FinancialAdvisorService.cs  # Pure C# Financial Health Score & Advice Engine
+│   ├── FinancialAdvisorService.cs  # Pure C# Financial Health Score & Advice Engine
+│   └── SavingsGoalService.cs      # Savings Goals CRUD & AI Deposit Recommendation Engine
 │
 └── wwwroot/                    # Web Assets
     ├── app.css                 # Custom glassmorphic styles & animations
@@ -84,7 +89,7 @@ Ensure you have the **.NET SDK (10.0 or later)** installed.
 ### Run Instructions (Windows AppLocker / Application Control)
 If your environment has strict Application Control policies blocking executable binary execution inside the `Downloads` directory, compile and run the assembly DLL directly from a trusted directory (like `C:\Users\suhas\C#_Project`):
 
-1. **Delete Existing SQLite DB** (required if resetting schema or seeding data):
+1. **Delete Existing SQLite DB** (required to initialize the new `SavingsGoals` schema table & seed sample targets):
    ```cmd
    del wealthflow.db
    ```

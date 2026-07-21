@@ -20,6 +20,7 @@ builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddScoped<ExpenseClassifierService>();
 builder.Services.AddScoped<SpendForecasterService>();
 builder.Services.AddScoped<FinancialAdvisorService>();
+builder.Services.AddScoped<SavingsGoalService>();
 
 var app = builder.Build();
 
