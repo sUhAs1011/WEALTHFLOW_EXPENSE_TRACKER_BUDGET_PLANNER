@@ -21,6 +21,7 @@ builder.Services.AddScoped<ExpenseClassifierService>();
 builder.Services.AddScoped<SpendForecasterService>();
 builder.Services.AddScoped<FinancialAdvisorService>();
 builder.Services.AddScoped<SavingsGoalService>();
+builder.Services.AddScoped<AnomalyDetectorService>();
 
 var app = builder.Build();
 

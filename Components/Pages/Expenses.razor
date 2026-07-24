@@ -4,6 +4,7 @@
 @inject ExpenseService ExpenseService
 @inject CategoryService CategoryService
 @inject ExpenseClassifierService Classifier
+@inject AnomalyDetectorService AnomalyDetector
 @inject IJSRuntime JS
 
 <PageTitle>WealthFlow — Expenses</PageTitle>
@@ -121,6 +122,12 @@
                                                     🔁 Auto
                                                 </span>
                                             }
+                                            @if (anomalyExpenseIds.Contains(expense.Id))
+                                            {
+                                                <span class="badge d-flex align-items-center gap-1" style="font-size: 0.65rem; padding: 2px 6px; background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" title="Outlier Deviation detected for this category">
+                                                    ⚠️ Outlier
+                                                </span>
+                                            }
                                         </div>
                                         @if (!string.IsNullOrWhiteSpace(expense.Notes))
                                         {
@@ -236,7 +243,7 @@
                         <!-- Amount -->
                         <div class="col-6">
                             <label class="form-label">Amount ($)</label>
-                            <InputNumber @bind-Value="editingExpense.Amount" class="form-control" placeholder="0.00" />
+                            <InputNumber @bind-Value="editingExpense.Amount" @bind-Value:after="CheckAmountAnomaly" class="form-control" placeholder="0.00" />
                             <ValidationMessage For="() => editingExpense.Amount" class="text-danger mt-1" style="font-size: 0.8rem;" />
                         </div>
                         
@@ -251,7 +258,7 @@
                     <!-- Category selection -->
                     <div>
                         <label class="form-label">Category</label>
-                        <InputSelect @bind-Value="editingExpense.CategoryId" class="form-select">
+                        <InputSelect @bind-Value="editingExpense.CategoryId" @bind-Value:after="CheckAmountAnomaly" class="form-select">
                             <option value="@(0)" disabled>Select Category</option>
                             @foreach (var cat in categories)
                             {
@@ -259,6 +266,18 @@
                             }
                         </InputSelect>
                         <ValidationMessage For="() => editingExpense.CategoryId" class="text-danger mt-1" style="font-size: 0.8rem;" />
+                        
+                        @if (modalAnomalyResult != null && modalAnomalyResult.IsAnomaly)
+                        {
+                            <div class="mt-2 p-2.5 rounded-3 fade-in" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
+                                <div class="d-flex align-items-center gap-2 text-danger font-weight-bold" style="font-size: 0.82rem;">
+                                    <span>🚨</span> Anomaly Alert: Unusual Expense Outlier Detected
+                                </div>
+                                <p class="text-secondary mb-0 mt-1" style="font-size: 0.78rem; line-height: 1.4;">
+                                    This amount is <strong>@modalAnomalyResult.ZScore.ToString("F1")</strong> standard deviations above your category average of <strong>$@modalAnomalyResult.AverageAmount.ToString("N2")</strong>.
+                                </p>
+                            </div>
+                        }
                     </div>
 
                     <!-- Recurring Toggle -->
@@ -336,6 +355,10 @@
     private string suggestedCategoryIconName = "";
     private double suggestedConfidence = 0.0;
 
+    // Anomaly Detection State
+    private AnomalyDetectorService.AnomalyResult? modalAnomalyResult;
+    private HashSet<int> anomalyExpenseIds = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -350,6 +373,7 @@
             allExpenses = await ExpenseService.GetExpensesAsync();
             ApplyFilters();
             UpdateSubscriptionsList();
+            await AnalyzeLedgerAnomalies();
         }
         catch (Exception ex)
         {
@@ -466,6 +490,7 @@
     private void OpenAddModal()
     {
         suggestedCategoryId = null;
+        modalAnomalyResult = null;
         editingExpense = new Expense 
         { 
             Date = DateTime.Today,
@@ -478,6 +503,7 @@
     private void OpenEditModal(Expense expense)
     {
         suggestedCategoryId = null;
+        modalAnomalyResult = null;
         editingExpense = new Expense
         {
             Id = expense.Id,
@@ -489,11 +515,13 @@
             IsRecurring = expense.IsRecurring
         };
         isModalOpen = true;
+        _ = CheckAmountAnomaly();
     }
 
     private void CloseModal()
     {
         suggestedCategoryId = null;
+        modalAnomalyResult = null;
         isModalOpen = false;
     }
 
@@ -534,6 +562,32 @@
             editingExpense.CategoryId = suggestedCategoryId.Value;
             suggestedCategoryId = null;
             ShowToast("Category suggestion applied!");
+            _ = CheckAmountAnomaly();
+        }
+    }
+
+    private async Task CheckAmountAnomaly()
+    {
+        if (editingExpense.CategoryId > 0 && editingExpense.Amount > 0)
+        {
+            modalAnomalyResult = await AnomalyDetector.AnalyzeAmountAsync(editingExpense.CategoryId, editingExpense.Amount);
+        }
+        else
+        {
+            modalAnomalyResult = null;
+        }
+    }
+
+    private async Task AnalyzeLedgerAnomalies()
+    {
+        anomalyExpenseIds.Clear();
+        foreach (var exp in allExpenses)
+        {
+            var res = await AnomalyDetector.AnalyzeAmountAsync(exp.CategoryId, exp.Amount);
+            if (res.IsAnomaly)
+            {
+                anomalyExpenseIds.Add(exp.Id);
+            }
         }
     }
 

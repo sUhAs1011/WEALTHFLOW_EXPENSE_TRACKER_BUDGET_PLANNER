@@ -8,6 +8,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 
 ## 🚀 Key Features
 
+* **🚨 Anomaly & Outlier Detector (Statistical ML)**: Protects your budget using a **Z-Score Outlier Analysis** engine. When logging or editing an expense, it dynamically calculates standard deviations ($\sigma$) and category averages ($\mu$). Outliers ($Z > 2.0$) trigger a glowing warning card in the modal and are flagged with a glowing red **`⚠️ Outlier`** badge in the ledger.
 * **🏆 "Wealth Targets" Savings Goals Tracker (Gamified)**: Set, monitor, and deposit money into custom savings goals (*Emergency Reserve*, *Tech Upgrade*, *Vacation*). Features glowing SVG circular progress rings, target date countdown badges, quick deposit modals, and AI-driven deposit recommendations.
 * **🤖 AI Financial Advisor & Strategy Engine**: Analyzes your linear regression forecasts, daily burn rates, and budget caps to generate **actionable savings recommendations**, budget breach alerts, sector concentration warnings, and a dynamic **Financial Health Score** (0–100).
 * **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
@@ -30,6 +31,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
   - Pure C# Naive Bayes Text Classifier for auto-suggestions
   - Pure C# Ordinary Least Squares (OLS) Linear Regression for dynamic N-day spend forecasting (7D to 90D)
   - Pure C# Contextual Expert Advisory Engine for Financial Health Scoring & personalized budget advice
+  - Pure C# Z-Score Anomaly Detector for identifying transaction outliers
   - Pure C# Savings Goal AI Deposit Pace Recommender
   - Zero external packages or Python runtimes required
 * **ORM (Database Access)**: Entity Framework Core 10.0
@@ -51,7 +53,7 @@ C#_Project/
 │   │   └── NavMenu.razor       # Top Horizontal Header Navigation
 │   ├── Pages/
 │   │   ├── Home.razor          # Main Dashboard & Budget Progress
-│   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions & Subscriptions Tracker
+│   │   ├── Expenses.razor      # Transaction CRUD, ML Suggestions, Anomaly Warnings & Subscriptions Tracker
 │   │   ├── Budgets.razor       # Set limits & category creator
 │   │   ├── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
 │   │   └── Savings.razor       # Gamified Wealth Targets, SVG progress rings & Deposit Modals
@@ -72,7 +74,8 @@ C#_Project/
 │   ├── ExpenseClassifierService.cs # Pure C# Naive Bayes Text Classifier
 │   ├── SpendForecasterService.cs   # Pure C# OLS Linear Regression Forecaster (N-day horizons)
 │   ├── FinancialAdvisorService.cs  # Pure C# Financial Health Score & Advice Engine
-│   └── SavingsGoalService.cs      # Savings Goals CRUD & AI Deposit Recommendation Engine
+│   ├── SavingsGoalService.cs       # Savings Goals CRUD & AI Deposit Recommendation Engine
+│   └── AnomalyDetectorService.cs   # Pure C# Z-Score Anomaly & Outlier Detector
 │
 └── wwwroot/                    # Web Assets
     ├── app.css                 # Custom glassmorphic styles & animations
@@ -89,23 +92,18 @@ Ensure you have the **.NET SDK (10.0 or later)** installed.
 ### Run Instructions (Windows AppLocker / Application Control)
 If your environment has strict Application Control policies blocking executable binary execution inside the `Downloads` directory, compile and run the assembly DLL directly from a trusted directory (like `C:\Users\suhas\C#_Project`):
 
-1. **Delete Existing SQLite DB** (required to initialize the new `SavingsGoals` schema table & seed sample targets):
-   ```cmd
-   del wealthflow.db
-   ```
-
-2. **Build the Application**:
+1. **Build the Application**:
    ```cmd
    dotnet build
    ```
 
-3. **Start the DLL Host**:
+2. **Start the DLL Host**:
    ```cmd
    dotnet bin\Debug\net10.0\C__Project.dll
    ```
 
-4. **Navigate to App**:
+3. **Navigate to App**:
    Open your browser to the local address outputted in the terminal console (usually `http://localhost:5000` or `https://localhost:5001`). 
 
-5. **Hard Refresh**:
+4. **Hard Refresh**:
    Perform a hard reload (**`Ctrl + F5`**) in your browser to clear old CSS assets from the cache.
