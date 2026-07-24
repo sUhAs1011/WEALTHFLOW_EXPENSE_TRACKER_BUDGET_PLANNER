@@ -1,0 +1,320 @@
+@page "/calendar"
+@using C__Project.Models
+@using C__Project.Services
+@inject ExpenseService ExpenseService
+
+<PageTitle>WealthFlow — Calendar</PageTitle>
+
+<div class="fade-in">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1 text-white d-flex align-items-center gap-2">
+                <span>📅</span> Financial Calendar
+            </h1>
+            <p class="text-secondary mb-0">Daily spending heatmap and recurring subscriptions schedule</p>
+        </div>
+        <div class="d-flex align-items-center gap-3 glass-card py-2 px-3" style="border-radius: 999px;">
+            <button class="btn btn-action text-white" @onclick="GoToPreviousMonth">
+                <span style="font-size: 1.2rem;">&lt;</span>
+            </button>
+            <h4 class="mb-0 text-white font-weight-bold text-center" style="min-width: 150px;">
+                @currentDate.ToString("MMMM yyyy")
+            </h4>
+            <button class="btn btn-action text-white" @onclick="GoToNextMonth">
+                <span style="font-size: 1.2rem;">&gt;</span>
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Calendar Grid Panel -->
+            <div class="col-12 col-lg-8">
+                <div class="glass-card h-100">
+                    <!-- Days of Week Header -->
+                    <div class="calendar-grid mb-2">
+                        <div class="day-header">SUN</div>
+                        <div class="day-header">MON</div>
+                        <div class="day-header">TUE</div>
+                        <div class="day-header">WED</div>
+                        <div class="day-header">THU</div>
+                        <div class="day-header">FRI</div>
+                        <div class="day-header">SAT</div>
+                    </div>
+
+                    <!-- Calendar Cells -->
+                    <div class="calendar-grid">
+                        @for (int i = 0; i < startDayOfWeek; i++)
+                        {
+                            <div class="calendar-cell empty-cell"></div>
+                        }
+
+                        @for (int day = 1; day <= daysInMonth; day++)
+                        {
+                            var loopDay = day;
+                            var date = new DateTime(currentDate.Year, currentDate.Month, loopDay);
+                            var dailyTotal = GetDailyTotal(date);
+                            var hasSubscription = HasSubscriptionOnDay(loopDay);
+                            var heatmapClass = GetHeatmapClass(dailyTotal);
+                            var isActive = selectedDate.HasValue && selectedDate.Value.Date == date.Date;
+
+                            <div class="calendar-cell @heatmapClass @(isActive ? "active" : "")" @onclick="() => SelectDate(date)">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <span class="font-weight-bold" style="font-size: 1.1rem;">@loopDay</span>
+                                    @if (hasSubscription)
+                                    {
+                                        <span title="Scheduled Subscription" style="font-size: 0.9rem;">🔁</span>
+                                    }
+                                </div>
+                                @if (dailyTotal > 0)
+                                {
+                                    <div class="text-end mt-auto font-weight-bold" style="font-size: 0.85rem; padding-top: 8px;">
+                                        $@dailyTotal.ToString("N0")
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="d-flex align-items-center justify-content-end gap-3 mt-4 text-secondary" style="font-size: 0.75rem;">
+                        <span class="d-flex align-items-center gap-2"><div style="width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,0.02);border:1px solid var(--border-light);"></div> None</span>
+                        <span class="d-flex align-items-center gap-2"><div style="width:12px;height:12px;border-radius:3px;background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);"></div> Low</span>
+                        <span class="d-flex align-items-center gap-2"><div style="width:12px;height:12px;border-radius:3px;background:rgba(241,196,15,0.15);border:1px solid rgba(241,196,15,0.4);"></div> Medium</span>
+                        <span class="d-flex align-items-center gap-2"><div style="width:12px;height:12px;border-radius:3px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);"></div> High</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Ledger Panel -->
+            <div class="col-12 col-lg-4">
+                <div class="glass-card h-100 d-flex flex-column">
+                    <h5 class="text-white mb-4 border-bottom border-secondary pb-3 d-flex justify-content-between align-items-center">
+                        <span>
+                            @(selectedDate.HasValue ? selectedDate.Value.ToString("MMM dd, yyyy") : "Select a Date")
+                        </span>
+                        @if (selectedDate.HasValue)
+                        {
+                            <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);">
+                                $@GetDailyTotal(selectedDate.Value).ToString("N2") Total
+                            </span>
+                        }
+                    </h5>
+
+                    @if (!selectedDate.HasValue)
+                    {
+                        <div class="text-center my-auto text-secondary">
+                            <span style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">📅</span>
+                            Click on any day in the calendar to view its transactions and scheduled subscriptions.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex-grow-1 overflow-auto pe-2" style="max-height: 500px;">
+                            @{
+                                var dayExpenses = GetExpensesForDate(selectedDate.Value);
+                                var daySubscriptions = GetSubscriptionsForDay(selectedDate.Value.Day);
+                            }
+
+                            <!-- Actual Transactions -->
+                            <h6 class="text-secondary mb-3" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Actual Expenses</h6>
+                            @if (!dayExpenses.Any())
+                            {
+                                <div class="p-3 text-center text-muted mb-4 rounded-3" style="background: rgba(255,255,255,0.01); border: 1px dashed var(--border-light); font-size: 0.85rem;">
+                                    No logged transactions.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-column gap-2 mb-4">
+                                    @foreach (var exp in dayExpenses)
+                                    {
+                                        <div class="p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: rgba(22, 28, 45, 0.8); border: 1px solid var(--border-light);">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: @(exp.Category?.Color + "20"); color: @exp.Category?.Color;">
+                                                    @exp.Category?.Icon
+                                                </div>
+                                                <div>
+                                                    <div class="text-white font-weight-bold" style="font-size: 0.9rem;">@exp.Description</div>
+                                                    <div class="text-secondary" style="font-size: 0.75rem;">@exp.Category?.Name</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-white font-weight-bold">
+                                                -$@exp.Amount.ToString("N2")
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Scheduled Subscriptions -->
+                            <h6 class="text-amber mb-3 mt-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Scheduled Subscriptions</h6>
+                            @if (!daySubscriptions.Any())
+                            {
+                                <div class="p-3 text-center text-muted rounded-3" style="background: rgba(255,255,255,0.01); border: 1px dashed var(--border-light); font-size: 0.85rem;">
+                                    No active subscriptions due.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-column gap-2">
+                                    @foreach (var sub in daySubscriptions)
+                                    {
+                                        <div class="p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                                                    🔁
+                                                </div>
+                                                <div>
+                                                    <div class="text-white font-weight-bold" style="font-size: 0.9rem;">@sub.Description</div>
+                                                    <div class="text-secondary" style="font-size: 0.75rem;">@sub.Category?.Name</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-white font-weight-bold">
+                                                $@sub.Amount.ToString("N2")
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private DateTime currentDate = DateTime.Today;
+    private DateTime? selectedDate;
+    private int daysInMonth;
+    private int startDayOfWeek;
+    private decimal maxDailySpend = 0;
+    
+    private List<Expense> allExpenses = new();
+    private List<Expense> recurringSubscriptions = new();
+    private Dictionary<DateTime, decimal> dailyTotals = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        CalculateCalendarMetrics();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            allExpenses = await ExpenseService.GetExpensesAsync();
+            recurringSubscriptions = allExpenses
+                .Where(e => e.IsRecurring)
+                .GroupBy(e => e.Description)
+                .Select(g => g.OrderByDescending(x => x.Date).First())
+                .ToList();
+                
+            UpdateDailyTotals();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CalculateCalendarMetrics()
+    {
+        var startOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+        daysInMonth = DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
+        startDayOfWeek = (int)startOfMonth.DayOfWeek; // 0 = Sun, 6 = Sat
+    }
+
+    private void UpdateDailyTotals()
+    {
+        dailyTotals.Clear();
+        maxDailySpend = 0;
+        
+        var currentMonthExpenses = allExpenses
+            .Where(e => e.Date.Year == currentDate.Year && e.Date.Month == currentDate.Month)
+            .ToList();
+
+        foreach (var group in currentMonthExpenses.GroupBy(e => e.Date.Date))
+        {
+            decimal total = group.Sum(e => e.Amount);
+            dailyTotals[group.Key] = total;
+            if (total > maxDailySpend)
+            {
+                maxDailySpend = total;
+            }
+        }
+    }
+
+    private void GoToPreviousMonth()
+    {
+        currentDate = currentDate.AddMonths(-1);
+        selectedDate = null;
+        CalculateCalendarMetrics();
+        UpdateDailyTotals();
+    }
+
+    private void GoToNextMonth()
+    {
+        currentDate = currentDate.AddMonths(1);
+        selectedDate = null;
+        CalculateCalendarMetrics();
+        UpdateDailyTotals();
+    }
+
+    private void SelectDate(DateTime date)
+    {
+        selectedDate = date;
+    }
+
+    private decimal GetDailyTotal(DateTime date)
+    {
+        return dailyTotals.ContainsKey(date.Date) ? dailyTotals[date.Date] : 0m;
+    }
+
+    private string GetHeatmapClass(decimal total)
+    {
+        if (total <= 0) return "heatmap-none";
+        
+        if (maxDailySpend == 0) return "heatmap-low";
+        
+        double ratio = (double)(total / maxDailySpend);
+        
+        if (ratio <= 0.3) return "heatmap-low";
+        if (ratio <= 0.7) return "heatmap-med";
+        return "heatmap-high";
+    }
+
+    private bool HasSubscriptionOnDay(int day)
+    {
+        return recurringSubscriptions.Any(s => s.Date.Day == day);
+    }
+
+    private List<Expense> GetExpensesForDate(DateTime date)
+    {
+        return allExpenses
+            .Where(e => e.Date.Date == date.Date)
+            .OrderByDescending(e => e.Amount)
+            .ToList();
+    }
+
+    private List<Expense> GetSubscriptionsForDay(int day)
+    {
+        return recurringSubscriptions
+            .Where(s => s.Date.Day == day)
+            .ToList();
+    }
+}
