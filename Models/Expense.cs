@@ -27,4 +27,7 @@ public class Expense
     public string? Notes { get; set; }
 
     public bool IsRecurring { get; set; }
+
+    public int? PaymentMethodId { get; set; }
+    public PaymentMethod? PaymentMethod { get; set; }
 }

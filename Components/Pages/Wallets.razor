@@ -1,0 +1,192 @@
+@page "/wallets"
+@using C__Project.Models
+@using C__Project.Services
+@inject WalletService WalletService
+
+<PageTitle>WealthFlow — Wallets</PageTitle>
+
+<div class="fade-in">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h1 class="mb-1 text-white d-flex align-items-center gap-2">
+                <span>💳</span> Multi-Wallet Manager
+            </h1>
+            <p class="text-secondary mb-0">Track payment methods, credit utilization, and spending splits.</p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (liquidityWarning)
+        {
+            <!-- Liquidity Warning Alert -->
+            <div class="glass-card mb-4 p-4 fade-in" style="border-left: 5px solid var(--danger); background: rgba(239, 68, 68, 0.05);">
+                <div class="d-flex align-items-start gap-3">
+                    <span style="font-size: 2rem;">⚠️</span>
+                    <div>
+                        <h4 class="text-white mb-1">Debt Liquidity Warning</h4>
+                        <p class="text-secondary mb-0">
+                            Your total tracked credit card spending currently exceeds your simulated liquid cash balance. 
+                            Consider paying down credit balances to avoid high interest charges.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Payment Methods Grid -->
+        <div class="row g-4 mb-5">
+            @foreach (var pm in paymentMethods)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="glass-card h-100 d-flex flex-column position-relative overflow-hidden">
+                        <!-- Top glow effect -->
+                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: @pm.Color; box-shadow: 0 0 15px @pm.Color;"></div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: @(pm.Color + "20"); color: @pm.Color; font-size: 1.5rem; border: 1px solid @(pm.Color + "40");">
+                                    @pm.Icon
+                                </div>
+                                <div>
+                                    <h5 class="text-white mb-0">@pm.Name</h5>
+                                    <small class="text-secondary" style="text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem;">@pm.Type</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        @{
+                            decimal spent = spendingSplit.ContainsKey(pm.Id) ? spendingSplit[pm.Id] : 0;
+                            double utilization = 0;
+                            if (pm.Type == PaymentType.Credit && pm.CreditLimit.HasValue && pm.CreditLimit.Value > 0)
+                            {
+                                utilization = (double)(spent / pm.CreditLimit.Value) * 100;
+                            }
+                        }
+
+                        <div class="mt-auto">
+                            @if (pm.Type == PaymentType.Credit && pm.CreditLimit.HasValue)
+                            {
+                                <div class="d-flex justify-content-between align-items-end mb-2">
+                                    <div>
+                                        <div class="text-secondary mb-1" style="font-size: 0.85rem;">Statement Balance</div>
+                                        <div class="text-white font-weight-bold" style="font-size: 1.25rem;">$@spent.ToString("N2")</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-secondary mb-1" style="font-size: 0.85rem;">Credit Limit</div>
+                                        <div class="text-muted" style="font-size: 1.1rem;">$@pm.CreditLimit.Value.ToString("N2")</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-secondary">Utilization Ratio</small>
+                                    <small class="@(utilization > 30 ? "text-warning" : "text-success") font-weight-bold">
+                                        @utilization.ToString("F1")%
+                                    </small>
+                                </div>
+                                <div class="progress-bar-wrapper mb-2" style="background: rgba(255,255,255,0.05); height: 6px;">
+                                    <div class="progress-bar-fill @(utilization > 30 ? "progress-warning" : "progress-success")" style="width: @(Math.Min(utilization, 100))%; box-shadow: 0 0 10px @(utilization > 30 ? "rgba(245, 158, 11, 0.5)" : "rgba(16, 185, 129, 0.5)");"></div>
+                                </div>
+                                @if (utilization > 30)
+                                {
+                                    <div class="text-warning" style="font-size: 0.75rem;">
+                                        <i>Using >30% of credit limit may impact credit score.</i>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-column mb-2">
+                                    <div class="text-secondary mb-1" style="font-size: 0.85rem;">Tracked Outgoing Cash Flow</div>
+                                    <div class="text-white font-weight-bold" style="font-size: 1.5rem;">$@spent.ToString("N2")</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Spending Splits Visual -->
+        <h4 class="text-white mb-3">Spending Distribution by Wallet</h4>
+        <div class="glass-card p-4">
+            @{
+                decimal totalAllSpent = spendingSplit.Values.Sum();
+            }
+            @if (totalAllSpent > 0)
+            {
+                <div class="d-flex align-items-center gap-4">
+                    <!-- Custom Horizontal Stacked Bar -->
+                    <div class="flex-grow-1">
+                        <div class="progress-bar-wrapper mb-3" style="height: 24px; border-radius: 12px; display: flex; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                            @foreach (var pm in paymentMethods)
+                            {
+                                if (spendingSplit.ContainsKey(pm.Id) && spendingSplit[pm.Id] > 0)
+                                {
+                                    double pct = (double)(spendingSplit[pm.Id] / totalAllSpent) * 100;
+                                    <div style="width: @pct%; background-color: @pm.Color; height: 100%; transition: width 0.5s ease; border-right: 2px solid rgba(0,0,0,0.2);" title="@pm.Name: $@spendingSplit[pm.Id].ToString("N2")"></div>
+                                }
+                            }
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div class="d-flex flex-wrap gap-4">
+                            @foreach (var pm in paymentMethods)
+                            {
+                                if (spendingSplit.ContainsKey(pm.Id) && spendingSplit[pm.Id] > 0)
+                                {
+                                    double pct = (double)(spendingSplit[pm.Id] / totalAllSpent) * 100;
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: @pm.Color; box-shadow: 0 0 8px @pm.Color;"></div>
+                                        <span class="text-secondary" style="font-size: 0.85rem;">@pm.Name</span>
+                                        <span class="text-white font-weight-bold" style="font-size: 0.85rem;">@pct.ToString("F1")%</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted">No transactions recorded yet.</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<PaymentMethod> paymentMethods = new();
+    private Dictionary<int, decimal> spendingSplit = new();
+    private bool liquidityWarning = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            paymentMethods = await WalletService.GetPaymentMethodsAsync();
+            spendingSplit = await WalletService.GetSpendingSplitAsync();
+            liquidityWarning = await WalletService.CheckLiquidityWarningAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

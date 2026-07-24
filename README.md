@@ -8,6 +8,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 
 ## 🚀 Key Features
 
+* **💳 Multi-Wallet & Payment Method Manager**: Assign payment methods (Checking, Credit, Cash) to your transactions. A dedicated dashboard displays glowing credit utilization progress bars, custom stacked spending split graphs, and a Debt Liquidity Warning alerting if total tracked credit spending exceeds available liquid balances.
 * **📅 Interactive Financial Calendar & Daily Heatmap**: A full month-view calendar replacing traditional date selectors. Days are dynamically color-coded based on spending volume using a GitHub-style heatmap (Green = low, Amber = average, Red = high). Clicking a day opens a Daily Ledger Inspector to view actual logged transactions alongside predictive recurring subscription billing dates.
 * **🚨 Anomaly & Outlier Detector (Statistical ML)**: Protects your budget using a **Z-Score Outlier Analysis** engine. When logging or editing an expense, it dynamically calculates standard deviations ($\sigma$) and category averages ($\mu$). Outliers ($Z > 2.0$) trigger a glowing warning card in the modal and are flagged with a glowing red **`⚠️ Outlier`** badge in the ledger.
 * **🏆 "Wealth Targets" Savings Goals Tracker (Gamified)**: Set, monitor, and deposit money into custom savings goals (*Emergency Reserve*, *Tech Upgrade*, *Vacation*). Features glowing SVG circular progress rings, target date countdown badges, quick deposit modals, and AI-driven deposit recommendations.
@@ -58,7 +59,8 @@ C#_Project/
 │   │   ├── Budgets.razor       # Set limits & category creator
 │   │   ├── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
 │   │   ├── Savings.razor       # Gamified Wealth Targets, SVG progress rings & Deposit Modals
-│   │   └── Calendar.razor      # Interactive daily spending heatmap & scheduled subscriptions viewer
+│   │   ├── Calendar.razor      # Interactive daily spending heatmap & scheduled subscriptions viewer
+│   │   └── Wallets.razor       # Multi-Wallet manager, credit utilization & liquidity alerts
 │   └── App.razor               # Blazor Entry, JS download helpers
 │
 ├── Data/                       # Persistence Context

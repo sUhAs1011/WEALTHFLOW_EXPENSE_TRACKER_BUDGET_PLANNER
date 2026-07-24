@@ -5,6 +5,7 @@
 @inject CategoryService CategoryService
 @inject ExpenseClassifierService Classifier
 @inject AnomalyDetectorService AnomalyDetector
+@inject WalletService WalletService
 @inject IJSRuntime JS
 
 <PageTitle>WealthFlow — Expenses</PageTitle>
@@ -137,9 +138,17 @@
                                         }
                                     </td>
                                     <td>
-                                        <span class="category-badge" style="background-color: @(expense.Category?.Color + "20"); color: @expense.Category?.Color; border: 1px solid @(expense.Category?.Color + "35")">
-                                            @expense.Category?.Icon @expense.Category?.Name
-                                        </span>
+                                        <div class="d-flex flex-column gap-1 align-items-start">
+                                            <span class="category-badge" style="background-color: @(expense.Category?.Color + "20"); color: @expense.Category?.Color; border: 1px solid @(expense.Category?.Color + "35")">
+                                                @expense.Category?.Icon @expense.Category?.Name
+                                            </span>
+                                            @if (expense.PaymentMethod != null)
+                                            {
+                                                <span class="badge" style="font-size: 0.7rem; font-weight: 500; background-color: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border-light);">
+                                                    @expense.PaymentMethod.Icon @expense.PaymentMethod.Name
+                                                </span>
+                                            }
+                                        </div>
                                     </td>
                                     <td class="text-white text-end font-weight-bold" style="font-size: 1.05rem;">
                                         -$@expense.Amount.ToString("N2")
@@ -280,6 +289,18 @@
                         }
                     </div>
 
+                    <!-- Payment Method selection -->
+                    <div>
+                        <label class="form-label">Payment Method (Optional)</label>
+                        <InputSelect @bind-Value="editingExpense.PaymentMethodId" class="form-select">
+                            <option value="">None / Unspecified</option>
+                            @foreach (var pm in paymentMethods)
+                            {
+                                <option value="@pm.Id">@pm.Icon @pm.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
                     <!-- Recurring Toggle -->
                     <div class="form-check form-switch mt-1">
                         <InputCheckbox @bind-Value="editingExpense.IsRecurring" class="form-check-input" id="isRecurring" />
@@ -337,6 +358,7 @@
     private List<Expense> allExpenses = new();
     private List<Expense> filteredExpenses = new();
     private List<Category> categories = new();
+    private List<PaymentMethod> paymentMethods = new();
     private List<Expense> activeSubscriptions = new();
     private decimal totalSubscriptionsCost = 0;
 
@@ -370,6 +392,7 @@
         try
         {
             categories = await CategoryService.GetCategoriesAsync();
+            paymentMethods = await WalletService.GetPaymentMethodsAsync();
             allExpenses = await ExpenseService.GetExpensesAsync();
             ApplyFilters();
             UpdateSubscriptionsList();
@@ -511,6 +534,7 @@
             Amount = expense.Amount,
             Date = expense.Date,
             CategoryId = expense.CategoryId,
+            PaymentMethodId = expense.PaymentMethodId,
             Notes = expense.Notes,
             IsRecurring = expense.IsRecurring
         };
