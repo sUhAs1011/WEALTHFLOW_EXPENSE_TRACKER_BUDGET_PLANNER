@@ -1,5 +1,22 @@
-/* Global CSS Variables - Modern Dark Glassmorphic Design System */
+/* Global CSS Variables - Base Layout & Typography */
 :root {
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    --border-light: rgba(255, 255, 255, 0.07);
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    
+    --glass-blur: blur(16px);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 🎨 Theme: Cyberpunk Neon (Default) */
+[data-theme="cyberpunk"], :root {
     --bg-primary: #0f111a;
     --bg-card: rgba(22, 28, 45, 0.65);
     --bg-card-hover: rgba(30, 37, 59, 0.85);
@@ -9,21 +26,57 @@
     --accent-secondary: #a855f7; /* Purple */
     --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
     
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    
     --border-glow: rgba(99, 102, 241, 0.15);
-    --border-light: rgba(255, 255, 255, 0.07);
     --border-focus: rgba(99, 102, 241, 0.6);
+    --primary-glow-shadow: rgba(99, 102, 241, 0.3);
+}
+
+/* 🎨 Theme: Emerald Mint */
+[data-theme="emerald"] {
+    --bg-primary: #061f14;
+    --bg-card: rgba(10, 36, 26, 0.65);
+    --bg-card-hover: rgba(15, 48, 36, 0.85);
+    --bg-sidebar: rgba(4, 18, 12, 0.95);
     
-    --success: #10b981; /* Emerald */
-    --warning: #f59e0b; /* Amber */
-    --danger: #ef4444; /* Rose */
+    --accent-primary: #10b981; /* Emerald */
+    --accent-secondary: #34d399; /* Mint */
+    --accent-gradient: linear-gradient(135deg, #059669 0%, #34d399 100%);
     
-    --glass-blur: blur(16px);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --border-glow: rgba(16, 185, 129, 0.15);
+    --border-focus: rgba(16, 185, 129, 0.6);
+    --primary-glow-shadow: rgba(16, 185, 129, 0.3);
+}
+
+/* 🎨 Theme: Midnight Sapphire */
+[data-theme="sapphire"] {
+    --bg-primary: #0a0f1d;
+    --bg-card: rgba(15, 23, 42, 0.65);
+    --bg-card-hover: rgba(24, 34, 56, 0.85);
+    --bg-sidebar: rgba(8, 12, 23, 0.95);
+    
+    --accent-primary: #3b82f6; /* Blue */
+    --accent-secondary: #06b6d4; /* Cyan */
+    --accent-gradient: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+    
+    --border-glow: rgba(59, 130, 246, 0.15);
+    --border-focus: rgba(59, 130, 246, 0.6);
+    --primary-glow-shadow: rgba(59, 130, 246, 0.3);
+}
+
+/* 🎨 Theme: Sunset Gold */
+[data-theme="sunset"] {
+    --bg-primary: #1c1917;
+    --bg-card: rgba(41, 37, 36, 0.65);
+    --bg-card-hover: rgba(68, 64, 60, 0.85);
+    --bg-sidebar: rgba(28, 25, 23, 0.95);
+    
+    --accent-primary: #f59e0b; /* Amber */
+    --accent-secondary: #f43f5e; /* Rose */
+    --accent-gradient: linear-gradient(135deg, #d97706 0%, #f43f5e 100%);
+    
+    --border-glow: rgba(245, 158, 11, 0.15);
+    --border-focus: rgba(245, 158, 11, 0.6);
+    --primary-glow-shadow: rgba(245, 158, 11, 0.3);
 }
 
 /* Base resets & theme setting */
