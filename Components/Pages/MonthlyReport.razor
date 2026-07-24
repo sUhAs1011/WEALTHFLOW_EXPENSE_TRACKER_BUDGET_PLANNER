@@ -1,0 +1,206 @@
+@page "/report/monthly"
+@layout C__Project.Components.Layout.PrintLayout
+@using C__Project.Models
+@using C__Project.Services
+@inject ExpenseService ExpenseService
+@inject FinancialAdvisorService AdvisorService
+@inject IJSRuntime JS
+
+<PageTitle>Monthly Financial Statement</PageTitle>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <p>Generating PDF Report...</p>
+    </div>
+}
+else
+{
+    <div class="print-container">
+        <!-- Report Header -->
+        <div class="d-flex justify-content-between align-items-center mb-5 pb-3 print-border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 24px; height: 24px; background-color: #00d2ff; border-radius: 50%;"></div>
+                <h2 class="mb-0" style="font-weight: 800; letter-spacing: -1px;">WealthFlow</h2>
+            </div>
+            <div class="text-end">
+                <h4 class="mb-0 text-uppercase" style="font-weight: 700; color: #3b82f6;">Monthly Statement</h4>
+                <p class="print-text-muted mb-0">@reportMonth.ToString("MMMM yyyy")</p>
+                <small class="print-text-muted">Generated on @DateTime.Now.ToString("MMM dd, yyyy")</small>
+            </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-4">
+                <div class="print-card h-100" style="border-top: 4px solid #ef4444 !important;">
+                    <p class="print-text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 700;">Total Spent</p>
+                    <h2 class="mb-0" style="font-weight: 800;">$@totalSpent.ToString("N2")</h2>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="print-card h-100" style="border-top: 4px solid #3b82f6 !important;">
+                    <p class="print-text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 700;">Transactions</p>
+                    <h2 class="mb-0" style="font-weight: 800;">@totalTransactions</h2>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="print-card h-100" style="border-top: 4px solid #10b981 !important;">
+                    <p class="print-text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 700;">Top Category</p>
+                    <h2 class="mb-0" style="font-weight: 800;">@topCategoryName</h2>
+                    <small class="print-text-muted">$@topCategoryAmount.ToString("N2")</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Advisor Section -->
+        <div class="print-card mb-5">
+            <div class="d-flex align-items-start gap-4">
+                <div class="text-center" style="min-width: 120px;">
+                    <div style="font-size: 3rem; font-weight: 800; color: @GetScoreColor(healthScore); line-height: 1;">
+                        @healthScore
+                    </div>
+                    <div class="print-text-muted text-uppercase mt-2" style="font-size: 0.7rem; font-weight: 700;">Health Score</div>
+                </div>
+                <div>
+                    <h5 class="mb-2" style="font-weight: 700;">AI Financial Analysis</h5>
+                    <ul class="mb-0 ps-3">
+                        @foreach (var tip in advisorTips)
+                        {
+                            <li class="mb-2" style="font-size: 0.95rem;">@tip</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spending Breakdown -->
+        <h4 class="mb-4" style="font-weight: 700;">Spending Breakdown</h4>
+        <div class="print-card mb-5 p-4">
+            @foreach (var category in categorySplit)
+            {
+                var pct = totalSpent > 0 ? (double)(category.Value / totalSpent) * 100 : 0;
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.9rem;">
+                        <span style="font-weight: 600;">@category.Key</span>
+                        <span>$@category.Value.ToString("N2") (@pct.ToString("F1")%)</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                        <div style="width: @pct%; height: 100%; background-color: #3b82f6;"></div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Page Break for Ledger -->
+        <div class="page-break"></div>
+
+        <h4 class="mb-4" style="font-weight: 700;">Top Transactions (@reportMonth.ToString("MMMM"))</h4>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #cbd5e1;">
+                    <th class="text-start py-2 print-text-muted" style="width: 15%;">Date</th>
+                    <th class="text-start py-2 print-text-muted" style="width: 45%;">Description</th>
+                    <th class="text-start py-2 print-text-muted" style="width: 25%;">Category</th>
+                    <th class="text-end py-2 print-text-muted" style="width: 15%;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var exp in topTransactions)
+                {
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td class="py-3" style="font-size: 0.9rem;">@exp.Date.ToString("MMM dd")</td>
+                        <td class="py-3">
+                            <div style="font-weight: 600; font-size: 0.95rem;">@exp.Description</div>
+                            @if (!string.IsNullOrEmpty(exp.Notes))
+                            {
+                                <div class="print-text-muted" style="font-size: 0.8rem;">@exp.Notes</div>
+                            }
+                        </td>
+                        <td class="py-3" style="font-size: 0.9rem;">@exp.Category?.Name</td>
+                        <td class="py-3 text-end" style="font-weight: 700;">$@exp.Amount.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="text-center mt-5 pt-4 print-text-muted print-border-bottom" style="border-top: 1px solid #e2e8f0; font-size: 0.8rem;">
+            Generated by WealthFlow Financial Tracker | Personal Use Only
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private DateTime reportMonth = DateTime.Today;
+    
+    private decimal totalSpent = 0;
+    private int totalTransactions = 0;
+    private string topCategoryName = "None";
+    private decimal topCategoryAmount = 0;
+    
+    private int healthScore = 0;
+    private List<string> advisorTips = new();
+    
+    private List<KeyValuePair<string, decimal>> categorySplit = new();
+    private List<Expense> topTransactions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReportData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Delay slightly to let the browser paint the DOM, then invoke print
+            await Task.Delay(500);
+            await JS.InvokeVoidAsync("window.print");
+        }
+    }
+
+    private async Task LoadReportData()
+    {
+        var allExpenses = await ExpenseService.GetExpensesAsync();
+        var currentMonthExpenses = allExpenses
+            .Where(e => e.Date.Year == reportMonth.Year && e.Date.Month == reportMonth.Month)
+            .ToList();
+
+        totalSpent = currentMonthExpenses.Sum(e => e.Amount);
+        totalTransactions = currentMonthExpenses.Count;
+
+        var groupedCategories = currentMonthExpenses
+            .GroupBy(e => e.Category?.Name ?? "Uncategorized")
+            .Select(g => new KeyValuePair<string, decimal>(g.Key, g.Sum(e => e.Amount)))
+            .OrderByDescending(x => x.Value)
+            .ToList();
+
+        categorySplit = groupedCategories;
+
+        if (groupedCategories.Any())
+        {
+            topCategoryName = groupedCategories.First().Key;
+            topCategoryAmount = groupedCategories.First().Value;
+        }
+
+        topTransactions = currentMonthExpenses
+            .OrderByDescending(e => e.Amount)
+            .Take(15) // Top 15 transactions
+            .ToList();
+
+        var advisorResult = await AdvisorService.GenerateFinancialAdviceAsync();
+        healthScore = advisorResult.HealthScore;
+        advisorTips = advisorResult.ActionableTips;
+
+        isLoading = false;
+    }
+
+    private string GetScoreColor(int score)
+    {
+        if (score >= 80) return "#10b981"; // Green
+        if (score >= 50) return "#f59e0b"; // Amber
+        return "#ef4444"; // Red
+    }
+}

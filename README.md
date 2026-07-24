@@ -15,6 +15,7 @@ WealthFlow provides a beautiful dark-themed, glassmorphic interface to track exp
 * **🤖 AI Financial Advisor & Strategy Engine**: Analyzes your linear regression forecasts, daily burn rates, and budget caps to generate **actionable savings recommendations**, budget breach alerts, sector concentration warnings, and a dynamic **Financial Health Score** (0–100).
 * **🧠 Real-Time ML Auto-Categorization**: Powered by a zero-dependency, Laplace-smoothed Naive Bayes text classification algorithm written from scratch in pure C#. As you type a description when logging an expense (e.g., *"Uber ride"* or *"McDonalds"*), it dynamically calculates category probabilities and displays an interactive suggestion badge to auto-assign the category in one click.
 * **📈 AI Spending Trend & Multi-Horizon Forecaster**: Analyzes historical transaction trajectories using an **Ordinary Least Squares (OLS) Linear Regression** algorithm ($y = mx + c$). Generates projected totals and daily burn rate paces across customizable time horizons (**7D**, **14D**, **30D**, **60D**, **90D**), scaling an interactive SVG graph with solid actual and dashed projected trend lines.
+* **📑 Branded PDF Monthly Financial Statement Generator**: Generates a downloadable, beautifully styled A4 PDF monthly financial summary report using zero-dependency CSS `@media print` rules, complete with KPI summaries, category charts, top ledger items, and the AI Financial Advisor score.
 * **📊 Glowing "Quick Stats" KPI Row**: Four dynamic dashboard cards displaying **Total Monthly Spend**, **Remaining Budget balance** (turns red if over limit), **Highest Spending Sector**, and **Daily Average Burn Rate** with neon hover glows.
 * **🔁 Recurring Subscriptions Tracker**: Toggle transactions as subscriptions (Netflix, Spotify, Rent). The Expenses panel features a dedicated sidebar showing total monthly committed drain, auto-billing dates, and transaction ledger badges.
 * **📥 CSV Export Button**: Download your transaction logs as Excel-compatible `.csv` files. Filtering records dynamically exports only the currently searched subset, complete with a custom filename prompt.
@@ -60,7 +61,8 @@ C#_Project/
 │   │   ├── Analytics.razor     # SVG breakdown, AI Forecast & Financial Advisor Engine
 │   │   ├── Savings.razor       # Gamified Wealth Targets, SVG progress rings & Deposit Modals
 │   │   ├── Calendar.razor      # Interactive daily spending heatmap & scheduled subscriptions viewer
-│   │   └── Wallets.razor       # Multi-Wallet manager, credit utilization & liquidity alerts
+│   │   ├── Wallets.razor       # Multi-Wallet manager, credit utilization & liquidity alerts
+│   │   └── MonthlyReport.razor # Printable A4 PDF layout generator
 │   └── App.razor               # Blazor Entry, JS download helpers
 │
 ├── Data/                       # Persistence Context
